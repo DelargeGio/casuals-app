@@ -16,3 +16,4 @@ window.renderView = (view) => {
         if (typeof cargarMensajes === 'function') cargarMensajes();
     }
 };
+
