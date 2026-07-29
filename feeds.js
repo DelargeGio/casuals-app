@@ -1,5 +1,5 @@
 // ======================================
-// FEEDS.JS - ESTILO MODORNO (TELEGRAM x INSTAGRAM PUNK)
+// FEEDS.JS - ESTILO MODERNO (TELEGRAM x INSTAGRAM PUNK)
 // ======================================
 
 const originalRenderView = window.renderView;
@@ -27,9 +27,12 @@ function renderFeedContainer() {
     
     if (!feedContainer) return;
 
+    // Forzar despliegue correcto en grid/flex del layout principal
     feedContainer.style.display = 'flex';
     feedContainer.style.flexDirection = 'column';
+    feedContainer.style.flex = '1';
     feedContainer.style.height = '100%';
+    feedContainer.style.overflow = 'hidden';
     
     if (mensajesContainer) {
         mensajesContainer.style.display = 'none';
@@ -40,51 +43,50 @@ function renderFeedContainer() {
     }
 
     feedContainer.innerHTML = `
-        <div style="display: flex; flex-direction: column; height: 100%; width: 100%; background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow: hidden;">
+        <div style="display: flex; flex-direction: column; flex: 1; width: 100%; height: 100%; min-height: 0; background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow: hidden;">
             
             <!-- Cabecera estilo App moderna -->
-            <div style="padding: 14px 16px; background: rgba(15,15,15,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; z-index: 10;">
-                <span style="font-weight: 800; font-size: 1rem; letter-spacing: 1px; color: #fff; display: flex; align-items: center; gap: 8px;">
+            <div style="padding: 12px 16px; background: rgba(15,15,15,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; z-index: 10;">
+                <span style="font-weight: 800; font-size: 0.95rem; letter-spacing: 1px; color: #fff; display: flex; align-items: center; gap: 8px;">
                     <span style="color: var(--neon-azul, #00f3ff);">⚡</span> CASUALS // FEED
                 </span>
-                <span style="font-size: 0.7rem; color: #777; background: #161616; padding: 4px 8px; border-radius: 20px; border: 1px solid #282828;">LIVE_FEED</span>
+                <span style="font-size: 0.65rem; color: #777; background: #161616; padding: 3px 8px; border-radius: 20px; border: 1px solid #282828;">LIVE_FEED</span>
             </div>
 
             <!-- Creador de publicaciones (Estilo Historia / Post moderno) -->
-            <div style="padding: 12px 16px; background: #121212; border-bottom: 1px solid #1f1f1f; flex-shrink: 0;">
+            <div style="padding: 10px 16px; background: #121212; border-bottom: 1px solid #1f1f1f; flex-shrink: 0;">
                 <div style="display: flex; gap: 10px; align-items: flex-start;">
-                    <div id="feed-user-avatar" style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-azul, #00f3ff), var(--oro, #ffd700)); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; font-size: 0.9rem; flex-shrink: 0;">U</div>
+                    <div id="feed-user-avatar" style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-azul, #00f3ff), var(--oro, #ffd700)); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; font-size: 0.85rem; flex-shrink: 0;">U</div>
                     <div style="flex: 1;">
-                        <textarea id="feed-input-texto" placeholder="¿Qué está pasando, agente?" rows="2" style="width: 100%; background: #181818; color: #fff; border: 1px solid #2a2a2a; padding: 10px 12px; border-radius: 12px; font-family: inherit; resize: none; outline: none; font-size: 0.9rem; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--neon-azul)'" onblur="this.style.borderColor='#2a2a2a'"></textarea>
+                        <textarea id="feed-input-texto" placeholder="¿Qué está pasando, agente?" rows="2" style="width: 100%; background: #181818; color: #fff; border: 1px solid #2a2a2a; padding: 8px 12px; border-radius: 10px; font-family: inherit; resize: none; outline: none; font-size: 0.85rem; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--neon-azul)'" onblur="this.style.borderColor='#2a2a2a'"></textarea>
                     </div>
                 </div>
                 
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-left: 48px;">
-                    <label style="cursor: pointer; background: #1a1a1a; border: 1px solid #333; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; color: var(--neon-azul); display: flex; align-items: center; gap: 6px; transition: background 0.2s;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-left: 46px;">
+                    <label style="cursor: pointer; background: #1a1a1a; border: 1px solid #333; padding: 5px 10px; border-radius: 20px; font-size: 0.72rem; color: var(--neon-azul); display: flex; align-items: center; gap: 5px;">
                         📷 <span>Foto</span> <input type="file" id="feed-file-input" accept="image/*" style="display:none;" onchange="prepararImagenFeed(event)">
                     </label>
-                    <span id="feed-file-status" style="font-size: 0.75rem; color: var(--oro); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                    <span id="feed-file-status" style="font-size: 0.72rem; color: var(--oro); max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
                     
-                    <button onclick="publicarEnFeed()" style="background: #fff; color: #000; border: none; font-weight: 700; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-family: inherit; font-size: 0.82rem; letter-spacing: 0.5px; transition: transform 0.1s;">
+                    <button onclick="publicarEnFeed()" style="background: #fff; color: #000; border: none; font-weight: 700; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-family: inherit; font-size: 0.78rem; letter-spacing: 0.5px;">
                         Publicar
                     </button>
                 </div>
 
-                <div id="feed-preview-container" style="margin-top: 10px; margin-left: 48px; display: none; position: relative; max-width: 150px;">
-                    <img id="feed-img-preview" src="" style="width: 100%; max-height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #333;">
-                    <button onclick="limpiarImagenFeed()" style="background: rgba(0,0,0,0.8); color: #ff5555; border: 1px solid #ff5555; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; cursor: pointer; position: absolute; top: -6px; right: -6px; display: flex; align-items: center; justify-content: center;">✕</button>
+                <div id="feed-preview-container" style="margin-top: 8px; margin-left: 46px; display: none; position: relative; max-width: 130px;">
+                    <img id="feed-img-preview" src="" style="width: 100%; max-height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #333;">
+                    <button onclick="limpiarImagenFeed()" style="background: rgba(0,0,0,0.8); color: #ff5555; border: 1px solid #ff5555; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; position: absolute; top: -5px; right: -5px; display: flex; align-items: center; justify-content: center;">✕</button>
                 </div>
             </div>
 
-            <!-- Lista de Feed (Estilo Tarjetas Modernas) -->
-            <div id="feed-posts-lista" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; -webkit-overflow-scrolling: touch;">
-                <div style="text-align: center; color: #555; margin-top: 40px; font-size: 0.85rem;">Sincronizando muro...</div>
+            <!-- Lista de Feed (Estilo Tarjetas Modernas con Scroll Propio) -->
+            <div id="feed-posts-lista" style="flex: 1; min-height: 0; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch;">
+                <div style="text-align: center; color: #555; margin-top: 30px; font-size: 0.82rem;">Sincronizando muro...</div>
             </div>
 
         </div>
     `;
 
-    // Asignar inicial del usuario en el avatar del creador
     const userActual = localStorage.getItem('casuals_user') || 'U';
     const avatarEl = document.getElementById('feed-user-avatar');
     if (avatarEl) {
@@ -171,9 +173,9 @@ function escucharPublicacionesFeed() {
         
         if (!snapshot.exists()) {
             listaDiv.innerHTML = `
-                <div style="text-align: center; color: #555; margin-top: 50px; font-size: 0.85rem;">
-                    <div style="font-size: 2rem; margin-bottom: 8px;">📭</div>
-                    No hay publicaciones en el feed todavía.<br>¡Sé el primero en reportar!
+                <div style="text-align: center; color: #555; margin-top: 40px; font-size: 0.82rem;">
+                    <div style="font-size: 1.8rem; margin-bottom: 6px;">📭</div>
+                    No hay publicaciones todavía.<br>¡Sé el primero en reportar!
                 </div>`;
             return;
         }
@@ -190,41 +192,37 @@ function escucharPublicacionesFeed() {
             const inicialAutor = post.autor ? post.autor.charAt(0).toUpperCase() : 'A';
             
             let imagenHtml = post.imagen ? `
-                <div style="margin-top: 10px; border-radius: 12px; overflow: hidden; background: #000; border: 1px solid #222;">
-                    <img src="${post.imagen}" style="width: 100%; max-height: 320px; object-fit: cover; display: block;" loading="lazy">
+                <div style="margin-top: 8px; border-radius: 10px; overflow: hidden; background: #000; border: 1px solid #222;">
+                    <img src="${post.imagen}" style="width: 100%; max-height: 280px; object-fit: cover; display: block;" loading="lazy">
                 </div>
             ` : '';
 
             let card = document.createElement('div');
-            card.style.cssText = "background: #141414; border: 1px solid #222; border-radius: 14px; padding: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: border-color 0.2s;";
+            card.style.cssText = "background: #141414; border: 1px solid #222; border-radius: 12px; padding: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.3);";
             
             card.innerHTML = `
-                <!-- Cabecera del Post (Avatar + Nombre + Tiempo) -->
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div style="width: 34px; height: 34px; border-radius: 50%; background: #222; border: 1px solid var(--neon-azul); color: var(--neon-azul); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 30px; height: 30px; border-radius: 50%; background: #222; border: 1px solid var(--neon-azul); color: var(--neon-azul); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.75rem;">
                             ${inicialAutor}
                         </div>
                         <div>
-                            <div style="font-weight: 700; color: #fff; font-size: 0.88rem;">${ escaparHTMLFeed(post.autor) }</div>
-                            <div style="font-size: 0.7rem; color: #666;">${fecha}</div>
+                            <div style="font-weight: 700; color: #fff; font-size: 0.85rem;">${ escaparHTMLFeed(post.autor) }</div>
+                            <div style="font-size: 0.65rem; color: #666;">${fecha}</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Contenido de Texto -->
                 ${post.texto ? `
-                    <div style="font-size: 0.9rem; color: #e0e0e0; word-break: break-word; line-height: 1.45; margin-bottom: 4px;">
+                    <div style="font-size: 0.85rem; color: #e0e0e0; word-break: break-word; line-height: 1.4; margin-bottom: 4px;">
                         ${ escaparHTMLFeed(post.texto).replace(/\n/g, '<br>') }
                     </div>
                 ` : ''}
 
-                <!-- Multimedia -->
                 ${imagenHtml}
 
-                <!-- Barra de interacciones estilo redes modernas -->
-                <div style="display: flex; align-items: center; gap: 16px; margin-top: 12px; padding-top: 8px; border-top: 1px solid #1e1e1e; font-size: 0.75rem; color: #777;">
-                    <button onclick="this.style.color = this.style.color === 'rgb(255, 51, 102)' ? '#777' : '#ff3366'; let c = this.querySelector('.like-count'); c.innerText = parseInt(c.innerText) + (this.style.color === 'rgb(255, 51, 102)' ? 1 : -1);" style="background: none; border: none; color: inherit; cursor: pointer; display: flex; align-items: center; gap: 4px; font-family: inherit; font-size: 0.8rem; padding: 0;">
+                <div style="display: flex; align-items: center; gap: 14px; margin-top: 10px; padding-top: 6px; border-top: 1px solid #1e1e1e; font-size: 0.72rem; color: #777;">
+                    <button onclick="this.style.color = this.style.color === 'rgb(255, 51, 102)' ? '#777' : '#ff3366'; let c = this.querySelector('.like-count'); c.innerText = parseInt(c.innerText) + (this.style.color === 'rgb(255, 51, 102)' ? 1 : -1);" style="background: none; border: none; color: inherit; cursor: pointer; display: flex; align-items: center; gap: 4px; font-family: inherit; font-size: 0.75rem; padding: 0;">
                         🔥 <span class="like-count">0</span>
                     </button>
                     <span style="display: flex; align-items: center; gap: 4px;">💬 Comentar</span>
