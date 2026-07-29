@@ -1,220 +1,179 @@
-// ==========================================================
-// FEEDS.JS - CASUALS v2.0 (INTEGRACIÓN TOTAL)
-// ==========================================================
+// ======================================
+// FEEDS.JS - MURO INDUSTRIAL PUNK / COMUNICADOS
+// ======================================
 
-const REACCIONES_CONFIG = [
-    { tipo: 'cheers', emoji: '🍻', color: '#d4af37' },
-    { tipo: 'soccer', emoji: '⚽️', color: '#ffffff' },
-    { tipo: 'fuego', emoji: '🔥', color: '#ff4500' },
-    { tipo: 'patrulla', emoji: '🚓', color: '#1e90ff' },
-    { tipo: 'cool', emoji: '😎', color: '#ffcc00' }
-];
+function renderFeedContainer() {
+    const feedContainer = document.getElementById('feed-container');
+    if (!feedContainer) return;
 
-window.renderFeed = () => {
-    const contenedor = document.getElementById('feed-container') || document.getElementById('view-content');
-    if (!contenedor) return;
-    
-    const mensajesContainer = document.getElementById('mensajes-container');
-    if (mensajesContainer) mensajesContainer.style.display = 'none';
-
-    contenedor.style.display = 'flex';
-    contenedor.style.flexDirection = 'column';
-    contenedor.style.height = '100%';
-
-    contenedor.innerHTML = `
-        <div style="padding: 10px; height: 100%; display: flex; flex-direction: column; box-sizing: border-box; background: #000;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 2px solid var(--oro); padding-bottom: 6px;">
-                <h2 style="color: var(--oro); margin: 0; font-family: 'Special Elite', cursive; font-size: 1rem; text-shadow: 0 0 5px rgba(212,175,55,0.4);">📰 FEED DE LA BANDA</h2>
-                <label style="background: var(--oro); color: #000; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 0.75rem; box-shadow: 0 0 8px rgba(212,175,55,0.5);">
-                    ➕ SUBIR FOTO / VIDEO
-                    <input type="file" accept="image/*,video/*" style="display: none;" onchange="subirArchivoFeed(event)">
-                </label>
+    // Estructura moderna con toque industrial punk
+    feedContainer.innerHTML = `
+        <div style="display: flex; flex-direction: column; height: 100%; background: #050505; color: #fff; font-family: monospace; overflow: hidden;">
+            
+            <!-- Cabecera del Feed -->
+            <div style="padding: 12px 16px; background: #0a0a0a; border-bottom: 2px solid var(--neon-azul, #00f3ff); display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: bold; font-size: 0.9rem; letter-spacing: 2px; color: var(--oro, #ffd700);">⚡ TABLÓN // FEED OFICIAL</span>
+                <span style="font-size: 0.7rem; color: #666;">SECURE_FEED_v2</span>
             </div>
-            <div id="feed-galeria" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; padding-bottom: 20px; align-items: center;">
-                <div style="text-align: center; margin-top: 40px; color: var(--oro);">
-                    <p>Cargando publicaciones...</p>
+
+            <!-- Formulario para crear publicación (Creador Táctico) -->
+            <div style="padding: 12px; background: #0f0f0f; border-bottom: 1px solid #222;">
+                <textarea id="feed-input-texto" placeholder="Escribe un comunicado o reporte..." rows="2" style="width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 4px; font-family: monospace; resize: none; outline: none; font-size: 0.85rem;" onfocus="this.style.borderColor='var(--neon-azul)'" onblur="this.style.borderColor='#333'"></textarea>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                    <!-- Input oculto para subir imagen al feed -->
+                    <label style="cursor: pointer; background: #1a1a1a; border: 1px solid #444; padding: 6px 12px; border-radius: 4px; font-size: 0.75rem; color: var(--neon-azul);">
+                        📷 Adjuntar Imagen <input type="file" id="feed-file-input" accept="image/*" style="display:none;" onchange="prepararImagenFeed(event)">
+                    </label>
+                    <span id="feed-file-status" style="font-size: 0.7rem; color: var(--oro); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                    
+                    <button onclick="publicarEnFeed()" style="background: var(--neon-azul, #00f3ff); color: #000; border: none; font-weight: bold; padding: 6px 16px; border-radius: 4px; cursor: pointer; font-family: monospace; font-size: 0.8rem; letter-spacing: 1px;">
+                        PUBLICAR 🚀
+                    </button>
+                </div>
+                <div id="feed-preview-container" style="margin-top: 8px; display: none; position: relative;">
+                    <img id="feed-img-preview" src="" style="max-height: 80px; border-radius: 4px; border: 1px solid var(--oro);">
+                    <button onclick="limpiarImagenFeed()" style="background: var(--fuego, #ff3333); color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; position: absolute; top: -5px; left: 100px;">✕</button>
                 </div>
             </div>
+
+            <!-- Lista de Publicaciones en tiempo real -->
+            <div id="feed-posts-lista" style="flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch;">
+                <div style="text-align: center; color: #555; margin-top: 20px; font-size: 0.8rem;">Cargando transmisiones...</div>
+            </div>
+
         </div>
     `;
 
-    cargarFeedFirebase();
-};
+    escucharPublicacionesFeed();
+}
 
-function cargarFeedFirebase() {
-    const galeria = document.getElementById('feed-galeria');
-    if (!galeria) return;
+let imagenFeedUrlTemporal = "";
 
-    db.ref('feed').on('value', (snapshot) => {
-        galeria.innerHTML = '';
-        const data = snapshot.val();
+async function prepararImagenFeed(event) {
+    const file = event.target.files[0];
+    if (!file) return;
 
-        let postsArray = [];
-        if (data) {
-            postsArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+    const statusLabel = document.getElementById('feed-file-status');
+    const previewContainer = document.getElementById('feed-preview-container');
+    const previewImg = document.getElementById('feed-img-preview');
+
+    statusLabel.innerText = "Subiendo imagen...";
+
+    try {
+        const storageRef = firebase.storage().ref();
+        const fileName = `feed_media/${Date.now()}_${file.name}`;
+        const fileRef = storageRef.child(fileName);
+
+        const snapshot = await fileRef.put(file);
+        imagenFeedUrlTemporal = await snapshot.ref.getDownloadURL();
+
+        previewImg.src = imagenFeedUrlTemporal;
+        previewContainer.style.display = 'block';
+        statusLabel.innerText = "¡Imagen lista!";
+    } catch (error) {
+        console.error("Error al subir imagen al feed:", error);
+        alert("Error al subir la imagen.");
+        statusLabel.innerText = "Error";
+    }
+}
+
+function limpiarImagenFeed() {
+    imagenFeedUrlTemporal = "";
+    document.getElementById('feed-file-input').value = "";
+    document.getElementById('feed-preview-container').style.display = 'none';
+    document.getElementById('feed-file-status').innerText = "";
+}
+
+function publicarEnFeed() {
+    const textoInput = document.getElementById('feed-input-texto');
+    const texto = textoInput.value.trim();
+
+    if (!texto && !imagenFeedUrlTemporal) {
+        alert("Escribe un texto o adjunta una imagen para publicar.");
+        return;
+    }
+
+    // Obtener el nombre del usuario actual desde localStorage (el mismo que usa el chat/login)
+    const autor = localStorage.getItem('casuals_user') || 'Agente Anónimo';
+
+    const nuevoPost = {
+        autor: autor,
+        texto: texto,
+        imagen: imagenFeedUrlTemporal || "",
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    // Mandar a Firebase Database
+    const dbRef = window.db.ref('feed_posts').push();
+    dbRef.set(nuevoPost).then(() => {
+        textoInput.value = "";
+        limpiarImagenFeed();
+        console.log("Publicación enviada con éxito.");
+    }).catch((err) => {
+        console.error("Error al publicar:", err);
+        alert("No se pudo enviar la publicación.");
+    });
+}
+
+function escucharPublicacionesFeed() {
+    const listaDiv = document.getElementById('feed-posts-lista');
+    if (!listaDiv) return;
+
+    const dbRef = window.db.ref('feed_posts').orderByChild('timestamp').limitToLast(30);
+
+    dbRef.on('value', (snapshot) => {
+        listaDiv.innerHTML = "";
+        
+        if (!snapshot.exists()) {
+            listaDiv.innerHTML = `<div style="text-align: center; color: #444; margin-top: 30px; font-size: 0.8rem;">No hay comunicados en el feed todavía. ¡Sé el primero!</div>`;
+            return;
         }
 
-        // Ordenar por fecha: publicaciones nuevas arriba (timestamp mayor primero)
-        postsArray.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        let posts = [];
+        snapshot.forEach((childSnapshot) => {
+            posts.push({ id: childSnapshot.key, ...childSnapshot.val() });
+        });
 
-        postsArray.forEach((post) => {
-            if (!post) return;
+        // Invertir para mostrar los más recientes arriba
+        posts.reverse();
 
-            const card = document.createElement('div');
-            card.className = 'tarjeta-feed';
-            card.style.cssText = `
-                background: #111;
-                border: 1px solid var(--oro);
-                border-radius: 8px;
-                padding: 12px;
-                box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
-                box-sizing: border-box;
-                width: 100%;
-                max-width: 420px;
-            `;
-
-            let mediaUrl = post.imagen || post.imagenUrl || post.url || post.img || post.image;
-            let mediaHtml = '';
-            if (mediaUrl) {
-                if (mediaUrl.match(/\.(mp4|webm|ogg|mov)$/i) || mediaUrl.startsWith('data:video')) {
-                    mediaHtml = `<video controls style="width: 100%; max-height: 350px; border-radius: 4px; background: #000; margin-top: 8px;"><source src="${mediaUrl}"></video>`;
-                } else {
-                    mediaHtml = `<img src="${mediaUrl}" style="width: 100%; max-height: 380px; object-fit: cover; border-radius: 4px; margin-top: 8px;" alt="Post" loading="lazy">`;
-                }
-            }
-
-            const autor = post.autor || 'Casual';
-            const iconoUser = post.icono || (typeof obtenerIconoUsuario === 'function' ? obtenerIconoUsuario(autor) : '💀');
-            const texto = post.texto || '';
+        posts.forEach((post) => {
+            const fecha = post.timestamp ? new Date(post.timestamp).toLocaleString() : 'Hace un momento';
             
-            let fechaLegible = 'Hace un momento';
-            if (post.timestamp) {
-                const d = new Date(post.timestamp);
-                fechaLegible = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            }
-
-            // Generar botones de reacciones con los emojis oficiales
-            let reaccionesHtml = '<div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; width: 100%;">';
-            REACCIONES_CONFIG.forEach(r => {
-                const total = (post.reacciones && post.reacciones[r.tipo]) ? post.reacciones[r.tipo] : 0;
-                reaccionesHtml += `
-                    <button onclick="darReaccion('${post.id}', '${r.tipo}')" style="background: rgba(0,0,0,0.6); border: 1px solid ${r.color}; color: #fff; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-family: 'Special Elite', cursive; display: flex; align-items: center; gap: 4px; font-size: 0.75rem;">
-                        ${r.emoji} <span id="rec-${post.id}-${r.tipo}">${total}</span>
-                    </button>
-                `;
-            });
-            reaccionesHtml += '</div>';
-
-            // Generar lista de comentarios
-            let comentariosHtml = '<div style="margin-top: 12px; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 8px;">';
-            comentariosHtml += '<div style="font-size: 0.8rem; color: #aaa; margin-bottom: 4px;">Comentarios</div>';
-            comentariosHtml += '<div style="max-height: 120px; overflow-y: auto; margin-bottom: 8px; padding-right: 2px; display: flex; flex-direction: column; gap: 4px;">';
-
-            if (post.comentarios) {
-                Object.values(post.comentarios).forEach(c => {
-                    comentariosHtml += `
-                        <div style="background: #1a1a1a; border-left: 2px solid var(--oro); padding: 5px 8px; border-radius: 4px; font-size: 0.8rem;">
-                            <strong style="color: var(--oro);">${c.autor}:</strong> <span style="color: #ddd; word-break: break-word;">${c.texto}</span>
-                        </div>
-                    `;
-                });
-            } else {
-                comentariosHtml += '<div style="color: #666; font-size: 0.75rem; font-style: italic;">Sin comentarios todavía.</div>';
-            }
-
-            comentariosHtml += `</div>
-                <div style="display: flex; gap: 6px;">
-                    <input type="text" id="input-comentario-${post.id}" placeholder="Escribe un comentario..." style="flex: 1; background: #000; border: 1px solid #333; color: #fff; padding: 6px; border-radius: 4px; font-size: 0.8rem; outline: none;" onkeydown="if(event.key === 'Enter') enviarComentario('${post.id}')">
-                    <button onclick="enviarComentario('${post.id}')" style="background: var(--oro); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.8rem;">➤</button>
+            let imagenHtml = post.imagen ? `
+                <div style="margin-top: 8px;">
+                    <img src="${post.imagen}" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 4px; border: 1px solid #333;" loading="lazy">
                 </div>
-            </div>`;
+            ` : '';
 
+            let card = document.createElement('div');
+            card.style.cssText = "background: #0a0a0a; border: 1px solid #222; border-left: 3px solid var(--neon-azul, #00f3ff); padding: 12px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.5);";
+            
             card.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(212,175,55,0.3); padding-bottom: 6px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 1.1rem; background: #222; padding: 4px; border-radius: 50%;">${iconoUser}</span>
-                        <span style="color: var(--oro); font-weight: bold; font-size: 0.9rem; text-shadow: 0 0 4px rgba(212,175,55,0.4);">${autor}</span>
-                    </div>
-                    <span style="color: #888; font-size: 0.7rem;">${fechaLegible}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid #1a1a1a; padding-bottom: 4px;">
+                    <span style="font-weight: bold; color: var(--oro, #ffd700); font-size: 0.8rem;">[ ${ escaparHTMLFeed(post.autor) } ]</span>
+                    <span style="font-size: 0.65rem; color: #555;">${fecha}</span>
                 </div>
-                ${mediaHtml}
-                ${texto ? `<p style="color: #fff; font-size: 0.9rem; margin-top: 10px; word-break: break-word; line-height: 1.4;">${texto}</p>` : ''}
-                ${reaccionesHtml}
-                ${comentariosHtml}
+                <div style="font-size: 0.85rem; color: #ddd; word-break: break-word; line-height: 1.4; margin-bottom: 6px;">
+                    ${ escaparHTMLFeed(post.texto).replace(/\n/g, '<br>') }
+                </div>
+                ${imagenHtml}
             `;
-            galeria.appendChild(card);
+
+            listaDiv.appendChild(card);
         });
     });
 }
 
-window.subirArchivoFeed = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+function escaparHTMLFeed(texto) {
+    if (!texto) return '';
+    return texto
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const usuarioActual = localStorage.getItem("casuals_user") || "Casual";
-        const iconoActual = typeof obtenerIconoUsuario === 'function' ? obtenerIconoUsuario(usuarioActual) : '💀';
-        const textoDesc = prompt("Escribe una descripción para la publicación (opcional):") || "";
-        const timestampActual = Date.now();
-
-        if (file.type.startsWith('image/')) {
-            const img = new Image();
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                const MAX_W = 800;
-                let w = img.width;
-                let h = img.height;
-                if (w > MAX_W) {
-                    h = h * (MAX_W / w);
-                    w = MAX_W;
-                }
-                canvas.width = w;
-                canvas.height = h;
-                ctx.drawImage(img, 0, 0, w, h);
-
-                db.ref('feed').push({
-                    autor: usuarioActual,
-                    icono: iconoActual,
-                    imagen: canvas.toDataURL('image/jpeg', 0.75),
-                    texto: textoDesc,
-                    timestamp: timestampActual
-                });
-            };
-            img.src = e.target.result;
-        } else {
-            db.ref('feed').push({
-                autor: usuarioActual,
-                icono: iconoActual,
-                imagen: e.target.result,
-                texto: textoDesc,
-                timestamp: timestampActual
-            });
-        }
-    };
-    reader.readAsDataURL(file);
-};
-
-window.darReaccion = (postId, tipo) => {
-    if (!postId || !tipo) return;
-    const ref = db.ref(`feed/${postId}/reacciones/${tipo}`);
-    ref.transaction((current) => (current || 0) + 1);
-};
-
-window.enviarComentario = (postId) => {
-    const input = document.getElementById(`input-comentario-${postId}`);
-    if (!input) return;
-    const texto = input.value.trim();
-    if (!texto) return;
-
-    const usuario = localStorage.getItem("casuals_user") || "Anónimo";
-
-    db.ref(`feed/${postId}/comentarios`).push({
-        autor: usuario,
-        texto: texto,
-        timestamp: Date.now()
-    }).then(() => {
-        input.value = '';
-    });
-};
+window.renderFeedContainer = renderFeedContainer;
