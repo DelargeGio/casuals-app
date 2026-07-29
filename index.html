@@ -88,12 +88,12 @@
                     <button class="send-btn" onclick="enviarMensaje()">➤</button>
                     <button id="btn-bengala-humo" class="smoke-btn" onclick="activarBengalaYHumio()">💨</button>
                     
-                    <!-- Botón 1: Cámara Directa -->
-                    <label class="image-btn" style="cursor: pointer;" title="Tomar Foto/Video">
-                        📸<input type="file" accept="image/*,video/*" capture="environment" onchange="typeof enviarArchivoLocal === 'function' ? enviarArchivoLocal(event) : console.log('Sube archivo')" style="display: none;">
+                    <!-- Botón 1: Cámara Directa (Forzada para Chrome quitando video/*) -->
+                    <label class="image-btn" style="cursor: pointer;" title="Tomar Foto">
+                        📸<input type="file" accept="image/*" capture="environment" onchange="typeof enviarArchivoLocal === 'function' ? enviarArchivoLocal(event) : console.log('Sube archivo')" style="display: none;">
                     </label>
 
-                    <!-- Botón 2: Galería / Archivos -->
+                    <!-- Botón 2: Galería / Archivos (Acepta fotos y videos guardados) -->
                     <label class="image-btn" style="cursor: pointer;" title="Subir desde Galería">
                         📁<input type="file" accept="image/*,video/*" onchange="typeof enviarArchivoLocal === 'function' ? enviarArchivoLocal(event) : console.log('Sube archivo')" style="display: none;">
                     </label>
