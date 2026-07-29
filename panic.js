@@ -1,5 +1,5 @@
 // ======================================
-// BOTÓN DE PÁNICO A.C.A.B. (GPS DIRECTO Y MAPA MÓVIL)
+// BOTÓN DE PÁNICO A.C.A.B. (TEXTO DE ALERTA SIN LINK DIRECTO)
 // ======================================
 
 function activarAlertaACAB() {
@@ -27,10 +27,8 @@ function activarAlertaACAB() {
             const lng = position.coords.longitude;
             const precision = Math.round(position.coords.accuracy);
             
-            // Usamos la URL universal de mapas que abre directo la app de Google Maps o el navegador con la chincheta exacta
-            const linkMapa = `https://maps.google.com/?q=${lat},${lng}`;
-            
-            const textoAlerta = `🚨 ¡ALERTA A.C.A.B. ACTIVA! 🚨\nEl agente [ ${usuario} ] reporta emergencia policial.\n📍 Abrir ubicación exacta (~${precision}m de error):\n${linkMapa}`;
+            // Mandamos los datos limpios en texto plano sin enlace interactivo
+            const textoAlerta = `🚨 ¡ALERTA A.C.A.B. ACTIVA! 🚨\nEl agente [ ${usuario} ] reporta emergencia policial.\n📍 Coordenadas exactas: Lat: ${lat}, Lng: ${lng} (Margen de error ~${precision}m)`;
 
             if (typeof firebase !== 'undefined') {
                 firebase.database().ref('mensajes').push({
@@ -43,7 +41,7 @@ function activarAlertaACAB() {
             }
         }, 
         (error) => {
-            alert("⚠️ No se pudo obtener la ubicación GPS. Verifica que tengas el GPS encendido y permisos concedidos.");
+            alert("⚠️ No se pudo obtener la ubicación GPS. Verifica tu GPS y permisos.");
             
             if (typeof firebase !== 'undefined') {
                 firebase.database().ref('mensajes').push({
