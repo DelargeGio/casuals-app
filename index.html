@@ -88,7 +88,7 @@
                     <button class="send-btn" onclick="enviarMensaje()">➤</button>
                     <button id="btn-bengala-humo" class="smoke-btn" onclick="activarBengalaYHumio()">💨</button>
                     <label class="image-btn" style="cursor: pointer;">
-                        📷<input type="file" accept="image/*" capture="environment" onchange="typeof enviarArchivoLocal === 'function' ? enviarArchivoLocal(event) : console.log('Sube archivo')" style="display: none;">
+                        📷<input type="file" accept="image/*,video/*" onchange="typeof enviarArchivoLocal === 'function' ? enviarArchivoLocal(event) : console.log('Sube archivo')" style="display: none;">
                     </label>
                 </div>
             </div>
