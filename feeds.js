@@ -2,22 +2,41 @@
 // FEEDS.JS - MURO INDUSTRIAL PUNK / COMUNICADOS
 // ======================================
 
+function renderFeed() {
+    renderFeedContainer();
+}
+
+function cargarFeed() {
+    renderFeedContainer();
+}
+
 function renderFeedContainer() {
     const feedContainer = document.getElementById('feed-container');
-    if (!feedContainer) return;
+    const mensajesContainer = document.getElementById('mensajes-container');
+    
+    if (!feedContainer) {
+        console.error("❌ Error crítico: No se encontró el elemento #feed-container en el HTML.");
+        return;
+    }
+
+    // Asegurar visibilidad correcta de las vistas
+    feedContainer.style.display = 'flex';
+    if (mensajesContainer) {
+        mensajesContainer.style.display = 'none';
+    }
 
     // Estructura moderna con toque industrial punk
     feedContainer.innerHTML = `
-        <div style="display: flex; flex-direction: column; height: 100%; background: #050505; color: #fff; font-family: monospace; overflow: hidden;">
+        <div style="display: flex; flex-direction: column; height: 100%; width: 100%; background: #050505; color: #fff; font-family: monospace; overflow: hidden;">
             
             <!-- Cabecera del Feed -->
-            <div style="padding: 12px 16px; background: #0a0a0a; border-bottom: 2px solid var(--neon-azul, #00f3ff); display: flex; justify-content: space-between; align-items: center;">
+            <div style="padding: 12px 16px; background: #0a0a0a; border-bottom: 2px solid var(--neon-azul, #00f3ff); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
                 <span style="font-weight: bold; font-size: 0.9rem; letter-spacing: 2px; color: var(--oro, #ffd700);">⚡ TABLÓN // FEED OFICIAL</span>
                 <span style="font-size: 0.7rem; color: #666;">SECURE_FEED_v2</span>
             </div>
 
             <!-- Formulario para crear publicación (Creador Táctico) -->
-            <div style="padding: 12px; background: #0f0f0f; border-bottom: 1px solid #222;">
+            <div style="padding: 12px; background: #0f0f0f; border-bottom: 1px solid #222; flex-shrink: 0;">
                 <textarea id="feed-input-texto" placeholder="Escribe un comunicado o reporte..." rows="2" style="width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 4px; font-family: monospace; resize: none; outline: none; font-size: 0.85rem;" onfocus="this.style.borderColor='var(--neon-azul)'" onblur="this.style.borderColor='#333'"></textarea>
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
@@ -94,7 +113,6 @@ function publicarEnFeed() {
         return;
     }
 
-    // Obtener el nombre del usuario actual desde localStorage (el mismo que usa el chat/login)
     const autor = localStorage.getItem('casuals_user') || 'Agente Anónimo';
 
     const nuevoPost = {
@@ -104,7 +122,6 @@ function publicarEnFeed() {
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
 
-    // Mandar a Firebase Database
     const dbRef = window.db.ref('feed_posts').push();
     dbRef.set(nuevoPost).then(() => {
         textoInput.value = "";
@@ -135,7 +152,6 @@ function escucharPublicacionesFeed() {
             posts.push({ id: childSnapshot.key, ...childSnapshot.val() });
         });
 
-        // Invertir para mostrar los más recientes arriba
         posts.reverse();
 
         posts.forEach((post) => {
@@ -176,4 +192,7 @@ function escaparHTMLFeed(texto) {
         .replace(/'/g, "&#039;");
 }
 
+// Exponer globalmente todas las variantes posibles
+window.renderFeed = renderFeed;
 window.renderFeedContainer = renderFeedContainer;
+window.cargarFeed = cargarFeed;
