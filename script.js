@@ -104,7 +104,6 @@ function enviarMensaje() {
     if (typeof vibrar === "function") vibrar(30);
 }
 
-// BOTÓN BENGALA: SOLO EFECTOS LOCALES (SIN MANDAR MENSAJE AL CHAT)
 function activarBengalaYHumio() {
     reproducirEfectoBengala();
 }
@@ -140,7 +139,6 @@ function procesarContenidoMensaje(texto) {
 
     let htmlModificado = texto;
 
-    // 1. Detección exacta para YouTube Shorts
     const ytShortsRegex = /(?:https?:\/\/)?(?:www\.)?youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})(?:\S+)?/g;
     if (ytShortsRegex.test(texto)) {
         ytShortsRegex.lastIndex = 0;
@@ -161,7 +159,6 @@ function procesarContenidoMensaje(texto) {
         return htmlModificado;
     }
 
-    // 2. Detección para YouTube Normal (watch?v= o youtu.be/)
     const ytNormalRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S+)?/g;
     if (ytNormalRegex.test(texto)) {
         ytNormalRegex.lastIndex = 0;
@@ -182,7 +179,6 @@ function procesarContenidoMensaje(texto) {
         return htmlModificado;
     }
 
-    // 3. Enlaces normales (texto plano clickeable)
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     htmlModificado = htmlModificado.replace(urlRegex, (url) => {
         return `<a href="${url}" target="_blank" style="color: var(--neon-azul); text-decoration: underline; word-break: break-all;">${url}</a>`;
@@ -191,7 +187,6 @@ function procesarContenidoMensaje(texto) {
     return `<p class="texto-mensaje">${htmlModificado}</p>`;
 }
 
-// Listener para cargar mensajes de Firebase en tiempo real
 function cargarMensajes() {
     const lista = document.getElementById("mensajes-lista");
     if (!lista) return;
@@ -286,7 +281,7 @@ window.cargarMensajes = cargarMensajes;
 window.iniciarPresencia = iniciarPresencia;
 
 // ======================================
-// SCRIPT.JS - ROUTER MAESTRO BLINDADO
+// SCRIPT.JS - ROUTER MAESTRO LIMPIO
 // ======================================
 
 window.DOM = {
@@ -319,8 +314,7 @@ window.renderView = function(view) {
     switch(view) {
         case 'feed':
             if (feedCont) {
-                feedCont.style.display = 'flex';
-                feedCont.style.position = 'absolute';
+                feedCont.style.display = 'block';
             }
             if (typeof window.renderFeedContainer === 'function') {
                 window.renderFeedContainer();
@@ -329,16 +323,14 @@ window.renderView = function(view) {
             
         case 'chat':
             if (msjCont) {
-                msjCont.style.display = 'flex';
-                msjCont.style.position = 'absolute';
-                msjCont.style.top = '95px';
-                msjCont.style.bottom = '65px';
-                msjCont.style.left = '0';
-                msjCont.style.right = '0';
-                msjCont.style.flexDirection = 'column';
+                msjCont.style.display = 'block';
+                // Limpiamos cualquier posición absoluta previa que oculte los botones
+                msjCont.style.position = '';
+                msjCont.style.top = '';
+                msjCont.style.bottom = '';
+                msjCont.style.left = '';
+                msjCont.style.right = '';
             }
-            
-            // Forzar carga inmediata de mensajes y presencia al entrar a la vista
             cargarMensajes();
             iniciarPresencia();
             break;
@@ -351,7 +343,6 @@ window.renderView = function(view) {
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("⚡ CASUALS CORE // Sistema inicializado correctamente.");
-    // Autocargar por si inicia directo en la vista de chat
     setTimeout(() => {
         cargarMensajes();
         iniciarPresencia();
