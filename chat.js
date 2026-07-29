@@ -31,19 +31,16 @@ function obtenerIconoUsuario(nombreOriginal) {
 // ======================================
 
 function reproducirEfectoBengala() {
-    // Zumbido en dispositivo móvil si está disponible
     if (navigator.vibrate) {
         navigator.vibrate([100, 50, 100, 50, 200]);
     }
 
-    // Generar sonido de explosión / bengala por Web Audio API sintetizado (sin depender de archivos externos)
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') {
             audioCtx.resume();
         }
 
-        // Ruido blanco para la explosión de humo
         const bufferSize = audioCtx.sampleRate * 1.5;
         const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
@@ -72,7 +69,6 @@ function reproducirEfectoBengala() {
         console.log("Audio contextual no soportado o bloqueado por navegador", e);
     }
 
-    // Efecto visual de pantalla sacidiéndose (Bengala)
     const appScreen = document.getElementById("app-screen");
     if (appScreen) {
         appScreen.classList.add("bengala-effect-anim");
@@ -110,8 +106,6 @@ function enviarMensaje() {
 
 function activarBengalaYHumio() {
     const usuario = localStorage.getItem("casuals_user") || "Anónimo";
-    
-    // Ejecutar sonido y zumbido local y en red si se desea
     reproducirEfectoBengala();
 
     if (typeof firebase !== 'undefined') {
@@ -146,6 +140,66 @@ function activarAlertaACAB() {
     }
 }
 
+// ======================================
+// PROCESADOR DE MULTIMEDIA BLINDADO (SHORTS Y VIDEOS)
+// ======================================
+
+function procesarContenidoMensaje(texto) {
+    if (!texto) return '';
+
+    let htmlModificado = texto;
+
+    // 1. Detección exacta para YouTube Shorts
+    const ytShortsRegex = /(?:https?:\/\/)?(?:www\.)?youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})(?:\S+)?/g;
+    if (ytShortsRegex.test(texto)) {
+        ytShortsRegex.lastIndex = 0;
+        htmlModificado = htmlModificado.replace(ytShortsRegex, (match, videoId) => {
+            return `
+                <div class="texto-mensaje" style="margin-bottom: 6px; word-break: break-all;">
+                    <a href="${match}" target="_blank" style="color: var(--neon-azul); text-decoration: underline;">${match}</a>
+                </div>
+                <div class="multimedia-box" style="margin-top: 8px;">
+                    <iframe width="100%" height="160" src="https://www.youtube.com/embed/${videoId}" 
+                        title="YouTube video player" frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen style="border-radius: 6px; border: 1px solid var(--oro);">
+                    </iframe>
+                </div>
+            `;
+        });
+        return htmlModificado;
+    }
+
+    // 2. Detección para YouTube Normal (watch?v= o youtu.be/)
+    const ytNormalRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S+)?/g;
+    if (ytNormalRegex.test(texto)) {
+        ytNormalRegex.lastIndex = 0;
+        htmlModificado = htmlModificado.replace(ytNormalRegex, (match, videoId) => {
+            return `
+                <div class="texto-mensaje" style="margin-bottom: 6px; word-break: break-all;">
+                    <a href="${match}" target="_blank" style="color: var(--neon-azul); text-decoration: underline;">${match}</a>
+                </div>
+                <div class="multimedia-box" style="margin-top: 8px;">
+                    <iframe width="100%" height="160" src="https://www.youtube.com/embed/${videoId}" 
+                        title="YouTube video player" frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen style="border-radius: 6px; border: 1px solid var(--oro);">
+                    </iframe>
+                </div>
+            `;
+        });
+        return htmlModificado;
+    }
+
+    // 3. Enlaces normales (texto plano clickeable)
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    htmlModificado = htmlModificado.replace(urlRegex, (url) => {
+        return `<a href="${url}" target="_blank" style="color: var(--neon-azul); text-decoration: underline; word-break: break-all;">${url}</a>`;
+    });
+
+    return `<p class="texto-mensaje">${htmlModificado}</p>`;
+}
+
 // Listener para cargar mensajes de Firebase en tiempo real
 function cargarMensajes() {
     const lista = document.getElementById("mensajes-lista");
@@ -170,34 +224,12 @@ function cargarMensajes() {
             const esMio = msg.autor === usuarioActual;
             const claseWrapper = esMio ? "mensaje-wrapper derecha" : "mensaje-wrapper izquierda";
 
-            let contenidoHtml = `<p class="texto-mensaje">${msg.texto}</p>`;
-            
-            if (msg.texto) {
-                let videoId = "";
-                if (msg.texto.includes("youtube.com/watch?v=")) {
-                    videoId = msg.texto.split("v=")[1]?.split("&")[0];
-                } else if (msg.texto.includes("youtu.be/")) {
-                    videoId = msg.texto.split("youtu.be/")[1]?.split("?")[0];
-                }
-
-                if (videoId) {
-                    contenidoHtml = `
-                        <p class="texto-mensaje">${msg.texto}</p>
-                        <div class="multimedia-box" style="margin-top: 8px;">
-                            <iframe width="100%" height="160" src="https://www.youtube.com/embed/${videoId}" 
-                                title="YouTube video player" frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen style="border-radius: 6px; border: 1px solid var(--oro);">
-                            </iframe>
-                        </div>
-                    `;
-                }
-            }
+            // Procesar mediante el motor unificado de multimedia (Shorts y Videos)
+            const contenidoHtml = procesarContenidoMensaje(msg.texto);
 
             const div = document.createElement("div");
             div.className = claseWrapper;
             
-            // AQUÍ METÍ EL BLINDAJE CON !important PARA EL BORDE Y EL NOMBRE
             div.innerHTML = `
                 <div class="burbuja-industrial" style="border-left: 4px solid ${colorUser} !important;">
                     <span class="autor-tag" style="color: ${colorUser} !important;">${iconoUser} ${msg.autor}</span>
@@ -233,7 +265,6 @@ function iniciarPresencia() {
         }
     });
 
-    // Escuchar todos los conectados para mostrarlos en la barra superior
     firebase.database().ref('presencia').on('value', (snapshot) => {
         const contenedorNombres = document.getElementById("lista-nombres-conectados");
         if (!contenedorNombres) return;
@@ -249,18 +280,17 @@ function iniciarPresencia() {
             const userObj = conectados[key];
             const icono = obtenerIconoUsuario(userObj.nombre);
             const color = obtenerColorUsuario(userObj.nombre);
-            // TAMBIÉN BLINDÉ LOS COLORES DE LOS USUARIOS CONECTADOS AQUÍ ARRIBA
             htmlNombres += `<span style="color: ${color} !important; margin-right: 10px; font-weight: bold;">${icono} ${userObj.nombre}</span>`;
         });
         contenedorNombres.innerHTML = htmlNombres;
     });
 }
 
-// Exponer funciones globalmente
+// Exponer funciones globalmente de forma limpia
 window.obtenerColorUsuario = obtenerColorUsuario;
 window.obtenerIconoUsuario = obtenerIconoUsuario;
 window.enviarMensaje = enviarMensaje;
 window.activarBengalaYHumio = activarBengalaYHumio;
 window.activarAlertaACAB = activarAlertaACAB;
 window.cargarMensajes = cargarMensajes;
-window. = iniciarPresencia;
+window.iniciarPresencia = iniciarPresencia;
