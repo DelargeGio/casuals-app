@@ -84,7 +84,10 @@ function reproducirEfectoBengala() {
 
 function enviarMensaje() {
     const input = document.getElementById("chat-in");
-    if (!input) return;
+    if (!input) {
+        console.error("No se encontró el input #chat-in");
+        return;
+    }
     const texto = input.value.trim();
     if (!texto) return;
 
@@ -281,7 +284,7 @@ window.cargarMensajes = cargarMensajes;
 window.iniciarPresencia = iniciarPresencia;
 
 // ======================================
-// SCRIPT.JS - ROUTER MAESTRO LIMPIO
+// SCRIPT.JS - ROUTER MAESTRO FLEX
 // ======================================
 
 window.DOM = {
@@ -323,8 +326,10 @@ window.renderView = function(view) {
             
         case 'chat':
             if (msjCont) {
-                msjCont.style.display = 'block';
-                // Limpiamos cualquier posición absoluta previa que oculte los botones
+                // Restauramos display flex para que el chat y los botones del CSS original seacomoden bien
+                msjCont.style.display = 'flex';
+                msjCont.style.flexDirection = 'column';
+                // Limpiamos cualquier posición absoluta forzada
                 msjCont.style.position = '';
                 msjCont.style.top = '';
                 msjCont.style.bottom = '';
