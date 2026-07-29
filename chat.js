@@ -104,18 +104,9 @@ function enviarMensaje() {
     if (typeof vibrar === "function") vibrar(30);
 }
 
+// BOTÓN BENGALA: SOLO EFECTOS LOCALES (SIN MANDAR MENSAJE AL CHAT)
 function activarBengalaYHumio() {
-    const usuario = localStorage.getItem("casuals_user") || "Anónimo";
     reproducirEfectoBengala();
-
-    if (typeof firebase !== 'undefined') {
-        firebase.database().ref('mensajes').push({
-            autor: usuario,
-            texto: "💨 [¡BENGALA DE HUMO ACTIVADA! 🚨]",
-            tiempo: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            timestamp: Date.now()
-        });
-    }
 }
 
 function activarAlertaACAB() {
