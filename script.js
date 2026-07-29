@@ -21,23 +21,24 @@ window.escaparHTML = function(texto) {
         .replace(/'/g, "&#039;");
 };
 
-// 2. ROUTER CENTRAL LIMPIO (Adiós a sobrescribir funciones a ciegas)
+// 2. ROUTER CENTRAL LIMPIO (Controlando visibilidad de contenedores)
 window.renderView = function(view) {
     console.log(`[Router] Navegando a vista: ${view}`);
 
-    // Ocultar vistas principales por defecto
     const feedCont = window.DOM.feedContainer;
     const msjCont = window.DOM.mensajesContainer;
 
-    if (feedCont) {
-        feedCont.style.display = 'none';
-        feedCont.style.position = 'absolute'; // Manteniendo el blindaje móvil
-    }
+    // Ocultar todo por defecto para evitar sobreposiciones
+    if (feedCont) feedCont.style.display = 'none';
     if (msjCont) msjCont.style.display = 'none';
 
-    // Despachar a los módulos correspondientes de forma limpia
+    // Despachar a los módulos correspondientes y mostrar su contenedor activo
     switch(view) {
         case 'feed':
+            if (feedCont) {
+                feedCont.style.display = 'flex';
+                feedCont.style.position = 'absolute';
+            }
             if (typeof window.renderFeedContainer === 'function') {
                 window.renderFeedContainer();
             } else {
@@ -46,6 +47,9 @@ window.renderView = function(view) {
             break;
             
         case 'chat':
+            if (msjCont) {
+                msjCont.style.display = 'flex'; // ¡Encendemos el chat de nuevo!
+            }
             if (typeof window.renderChatContainer === 'function') {
                 window.renderChatContainer();
             } else if (typeof window.cargarChat === 'function') {
@@ -63,7 +67,6 @@ window.renderView = function(view) {
 document.addEventListener('DOMContentLoaded', () => {
     console.log("⚡ CASUALS CORE // Sistema inicializado correctamente.");
     
-    // Validar sesión o estado inicial si es necesario
     const usuario = localStorage.getItem('casuals_user');
     if (!usuario && typeof window.mostrarLogin === 'function') {
         window.mostrarLogin();
