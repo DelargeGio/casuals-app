@@ -1,22 +1,20 @@
 // ======================================
-// BOTÓN DE PÁNICO A.C.A.B. (TIEMPO REAL / GPS BLINDADO)
+// BOTÓN DE PÁNICO A.C.A.B. (GPS DIRECTO Y MAPA MÓVIL)
 // ======================================
 
 function activarAlertaACAB() {
     const usuario = localStorage.getItem("casuals_user") || "Anónimo";
     
-    // Verificamos soporte de geolocalización con alta precisión
     if (!navigator.geolocation) {
         alert("Tu navegador no soporta geolocalización.");
         return;
     }
 
-    // Feedback táctil inmediato de emergencia (vibración fuerte)
+    // Vibración de emergencia fuerte
     if (navigator.vibrate) {
         navigator.vibrate([300, 100, 300, 100, 500]);
     }
 
-    // Opciones de GPS de alta precisión
     const opcionesGeo = {
         enableHighAccuracy: true,
         timeout: 10000,
@@ -27,45 +25,30 @@ function activarAlertaACAB() {
         (position) => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
-            const precision = position.coords.accuracy; // metros de precisión
+            const precision = Math.round(position.coords.accuracy);
             
-            // Enlace directo a Google Maps con chincheta en las coordenadas exactas
-            const linkMapa = `https://www.google.com/maps?q=${lat},${lng}`;
+            // Usamos la URL universal de mapas que abre directo la app de Google Maps o el navegador con la chincheta exacta
+            const linkMapa = `https://maps.google.com/?q=${lat},${lng}`;
             
-            const textoAlerta = `🚨 ¡ALERTA A.C.A.B. ACTIVA! 🚨\nEl agente ${usuario} reporta presencia policial o emergencia.\n📍 Ubicación exacta (Margen de error ~${Math.round(precision)}m):\n${linkMapa}`;
+            const textoAlerta = `🚨 ¡ALERTA A.C.A.B. ACTIVA! 🚨\nEl agente [ ${usuario} ] reporta emergencia policial.\n📍 Abrir ubicación exacta (~${precision}m de error):\n${linkMapa}`;
 
             if (typeof firebase !== 'undefined') {
                 firebase.database().ref('mensajes').push({
                     autor: usuario,
                     texto: textoAlerta,
-                    esAlertaAcab: true, // Identificador especial para emergencias
+                    esAlertaAcab: true,
                     tiempo: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     timestamp: Date.now()
                 });
-            } else {
-                console.error("Firebase no disponible para enviar la alerta.");
             }
         }, 
         (error) => {
-            let mensajeError = "No se pudo obtener la ubicación.";
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    mensajeError = "Permiso de ubicación denegado. Activa el GPS.";
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    mensajeError = "Información de ubicación no disponible.";
-                    break;
-                case error.TIMEOUT:
-                    mensajeError = "Tiempo de espera agotado al buscar GPS.";
-                    break;
-            }
-            alert(`⚠️ ERROR DE ALERTA: ${mensajeError}`);
+            alert("⚠️ No se pudo obtener la ubicación GPS. Verifica que tengas el GPS encendido y permisos concedidos.");
             
-            // Aunque falle el GPS, mandamos el grito de auxilio al chat
             if (typeof firebase !== 'undefined') {
                 firebase.database().ref('mensajes').push({
                     autor: usuario,
-                    texto: `🚨 ¡ALERTA A.C.A.B.! 🚨 (${usuario} solicitó auxilio pero el GPS falló o está bloqueado)`,
+                    texto: `🚨 ¡ALERTA A.C.A.B.! 🚨 (${usuario} activó el pánico pero falló la lectura del GPS)`,
                     esAlertaAcab: true,
                     tiempo: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     timestamp: Date.now()
