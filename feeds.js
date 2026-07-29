@@ -1,5 +1,5 @@
 // ======================================
-// FEEDS.JS - ESTILO MODERNO (TELEGRAM x INSTAGRAM PUNK)
+// FEEDS.JS - POSICIONAMIENTO ABSOLUTO MÓVIL (BLINDADO)
 // ======================================
 
 const originalRenderView = window.renderView;
@@ -27,11 +27,15 @@ function renderFeedContainer() {
     
     if (!feedContainer) return;
 
-    // Forzar despliegue correcto en grid/flex del layout principal
+    // Posicionamiento absoluto estricto para evitar colapsos en Chrome y Samsung Internet
+    feedContainer.style.position = 'absolute';
+    feedContainer.style.top = '95px';     // Espacio exacto debajo de la cabecera y conectados
+    feedContainer.style.bottom = '65px';  // Espacio exacto arriba de la barra de navegación inferior
+    feedContainer.style.left = '0';
+    feedContainer.style.right = '0';
     feedContainer.style.display = 'flex';
     feedContainer.style.flexDirection = 'column';
-    feedContainer.style.flex = '1';
-    feedContainer.style.height = '100%';
+    feedContainer.style.zIndex = '5';
     feedContainer.style.overflow = 'hidden';
     
     if (mensajesContainer) {
@@ -43,17 +47,17 @@ function renderFeedContainer() {
     }
 
     feedContainer.innerHTML = `
-        <div style="display: flex; flex-direction: column; flex: 1; width: 100%; height: 100%; min-height: 0; background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow: hidden;">
+        <div style="display: flex; flex-direction: column; width: 100%; height: 100%; background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow: hidden;">
             
             <!-- Cabecera estilo App moderna -->
-            <div style="padding: 12px 16px; background: rgba(15,15,15,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; z-index: 10;">
+            <div style="padding: 10px 16px; background: rgba(15,15,15,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; z-index: 10;">
                 <span style="font-weight: 800; font-size: 0.95rem; letter-spacing: 1px; color: #fff; display: flex; align-items: center; gap: 8px;">
                     <span style="color: var(--neon-azul, #00f3ff);">⚡</span> CASUALS // FEED
                 </span>
                 <span style="font-size: 0.65rem; color: #777; background: #161616; padding: 3px 8px; border-radius: 20px; border: 1px solid #282828;">LIVE_FEED</span>
             </div>
 
-            <!-- Creador de publicaciones (Estilo Historia / Post moderno) -->
+            <!-- Creador de publicaciones -->
             <div style="padding: 10px 16px; background: #121212; border-bottom: 1px solid #1f1f1f; flex-shrink: 0;">
                 <div style="display: flex; gap: 10px; align-items: flex-start;">
                     <div id="feed-user-avatar" style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-azul, #00f3ff), var(--oro, #ffd700)); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; font-size: 0.85rem; flex-shrink: 0;">U</div>
@@ -79,9 +83,9 @@ function renderFeedContainer() {
                 </div>
             </div>
 
-            <!-- Lista de Feed (Estilo Tarjetas Modernas con Scroll Propio) -->
+            <!-- Lista de Feed con Scroll Propio -->
             <div id="feed-posts-lista" style="flex: 1; min-height: 0; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch;">
-                <div style="text-align: center; color: #555; margin-top: 30px; font-size: 0.82rem;">Sincronizando muro...</div>
+                <div style="text-align: center; color: #555; margin-top: 40px; font-size: 0.82rem;">Sincronizando muro...</div>
             </div>
 
         </div>
