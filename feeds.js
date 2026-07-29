@@ -1,8 +1,7 @@
 // ======================================
-// FEEDS.JS - MURO INDUSTRIAL PUNK / COMUNICADOS
+// FEEDS.JS - ESTILO MODORNO (TELEGRAM x INSTAGRAM PUNK)
 // ======================================
 
-// Interceptar el cambio de vistas global para asegurar que el feed siempre cargue su HTML
 const originalRenderView = window.renderView;
 window.renderView = function(view) {
     if (typeof originalRenderView === 'function') {
@@ -26,12 +25,8 @@ function renderFeedContainer() {
     const feedContainer = document.getElementById('feed-container');
     const mensajesContainer = document.getElementById('mensajes-container');
     
-    if (!feedContainer) {
-        console.error("❌ Error crítico: No se encontró el elemento #feed-container en el HTML.");
-        return;
-    }
+    if (!feedContainer) return;
 
-    // Forzar visibilidad de las vistas
     feedContainer.style.display = 'flex';
     feedContainer.style.flexDirection = 'column';
     feedContainer.style.height = '100%';
@@ -40,49 +35,61 @@ function renderFeedContainer() {
         mensajesContainer.style.display = 'none';
     }
 
-    // Si ya tiene contenido cargado, no lo reiniciamos para evitar parpadeos, a menos que esté vacío
     if (feedContainer.innerHTML.trim() !== "" && document.getElementById('feed-posts-lista')) {
         return;
     }
 
-    // Estructura moderna con toque industrial punk
     feedContainer.innerHTML = `
-        <div style="display: flex; flex-direction: column; height: 100%; width: 100%; background: #050505; color: #fff; font-family: monospace; overflow: hidden;">
+        <div style="display: flex; flex-direction: column; height: 100%; width: 100%; background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow: hidden;">
             
-            <!-- Cabecera del Feed -->
-            <div style="padding: 12px 16px; background: #0a0a0a; border-bottom: 2px solid var(--neon-azul, #00f3ff); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
-                <span style="font-weight: bold; font-size: 0.9rem; letter-spacing: 2px; color: var(--oro, #ffd700);">⚡ TABLÓN // FEED OFICIAL</span>
-                <span style="font-size: 0.7rem; color: #666;">SECURE_FEED_v2</span>
+            <!-- Cabecera estilo App moderna -->
+            <div style="padding: 14px 16px; background: rgba(15,15,15,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; z-index: 10;">
+                <span style="font-weight: 800; font-size: 1rem; letter-spacing: 1px; color: #fff; display: flex; align-items: center; gap: 8px;">
+                    <span style="color: var(--neon-azul, #00f3ff);">⚡</span> CASUALS // FEED
+                </span>
+                <span style="font-size: 0.7rem; color: #777; background: #161616; padding: 4px 8px; border-radius: 20px; border: 1px solid #282828;">LIVE_FEED</span>
             </div>
 
-            <!-- Formulario para crear publicación (Creador Táctico) -->
-            <div style="padding: 12px; background: #0f0f0f; border-bottom: 1px solid #222; flex-shrink: 0;">
-                <textarea id="feed-input-texto" placeholder="Escribe un comunicado o reporte..." rows="2" style="width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 4px; font-family: monospace; resize: none; outline: none; font-size: 0.85rem;" onfocus="this.style.borderColor='var(--neon-azul)'" onblur="this.style.borderColor='#333'"></textarea>
+            <!-- Creador de publicaciones (Estilo Historia / Post moderno) -->
+            <div style="padding: 12px 16px; background: #121212; border-bottom: 1px solid #1f1f1f; flex-shrink: 0;">
+                <div style="display: flex; gap: 10px; align-items: flex-start;">
+                    <div id="feed-user-avatar" style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-azul, #00f3ff), var(--oro, #ffd700)); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; font-size: 0.9rem; flex-shrink: 0;">U</div>
+                    <div style="flex: 1;">
+                        <textarea id="feed-input-texto" placeholder="¿Qué está pasando, agente?" rows="2" style="width: 100%; background: #181818; color: #fff; border: 1px solid #2a2a2a; padding: 10px 12px; border-radius: 12px; font-family: inherit; resize: none; outline: none; font-size: 0.9rem; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--neon-azul)'" onblur="this.style.borderColor='#2a2a2a'"></textarea>
+                    </div>
+                </div>
                 
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                    <!-- Input oculto para subir imagen al feed -->
-                    <label style="cursor: pointer; background: #1a1a1a; border: 1px solid #444; padding: 6px 12px; border-radius: 4px; font-size: 0.75rem; color: var(--neon-azul);">
-                        📷 Adjuntar Imagen <input type="file" id="feed-file-input" accept="image/*" style="display:none;" onchange="prepararImagenFeed(event)">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-left: 48px;">
+                    <label style="cursor: pointer; background: #1a1a1a; border: 1px solid #333; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; color: var(--neon-azul); display: flex; align-items: center; gap: 6px; transition: background 0.2s;">
+                        📷 <span>Foto</span> <input type="file" id="feed-file-input" accept="image/*" style="display:none;" onchange="prepararImagenFeed(event)">
                     </label>
-                    <span id="feed-file-status" style="font-size: 0.7rem; color: var(--oro); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                    <span id="feed-file-status" style="font-size: 0.75rem; color: var(--oro); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
                     
-                    <button onclick="publicarEnFeed()" style="background: var(--neon-azul, #00f3ff); color: #000; border: none; font-weight: bold; padding: 6px 16px; border-radius: 4px; cursor: pointer; font-family: monospace; font-size: 0.8rem; letter-spacing: 1px;">
-                        PUBLICAR 🚀
+                    <button onclick="publicarEnFeed()" style="background: #fff; color: #000; border: none; font-weight: 700; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-family: inherit; font-size: 0.82rem; letter-spacing: 0.5px; transition: transform 0.1s;">
+                        Publicar
                     </button>
                 </div>
-                <div id="feed-preview-container" style="margin-top: 8px; display: none; position: relative;">
-                    <img id="feed-img-preview" src="" style="max-height: 80px; border-radius: 4px; border: 1px solid var(--oro);">
-                    <button onclick="limpiarImagenFeed()" style="background: var(--fuego, #ff3333); color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; position: absolute; top: -5px; left: 100px;">✕</button>
+
+                <div id="feed-preview-container" style="margin-top: 10px; margin-left: 48px; display: none; position: relative; max-width: 150px;">
+                    <img id="feed-img-preview" src="" style="width: 100%; max-height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #333;">
+                    <button onclick="limpiarImagenFeed()" style="background: rgba(0,0,0,0.8); color: #ff5555; border: 1px solid #ff5555; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; cursor: pointer; position: absolute; top: -6px; right: -6px; display: flex; align-items: center; justify-content: center;">✕</button>
                 </div>
             </div>
 
-            <!-- Lista de Publicaciones en tiempo real -->
-            <div id="feed-posts-lista" style="flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch;">
-                <div style="text-align: center; color: #555; margin-top: 20px; font-size: 0.8rem;">Cargando transmisiones...</div>
+            <!-- Lista de Feed (Estilo Tarjetas Modernas) -->
+            <div id="feed-posts-lista" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; -webkit-overflow-scrolling: touch;">
+                <div style="text-align: center; color: #555; margin-top: 40px; font-size: 0.85rem;">Sincronizando muro...</div>
             </div>
 
         </div>
     `;
+
+    // Asignar inicial del usuario en el avatar del creador
+    const userActual = localStorage.getItem('casuals_user') || 'U';
+    const avatarEl = document.getElementById('feed-user-avatar');
+    if (avatarEl) {
+        avatarEl.innerText = userActual.charAt(0).toUpperCase();
+    }
 
     escucharPublicacionesFeed();
 }
@@ -97,7 +104,7 @@ async function prepararImagenFeed(event) {
     const previewContainer = document.getElementById('feed-preview-container');
     const previewImg = document.getElementById('feed-img-preview');
 
-    statusLabel.innerText = "Subiendo imagen...";
+    statusLabel.innerText = "Subiendo...";
 
     try {
         const storageRef = firebase.storage().ref();
@@ -109,7 +116,7 @@ async function prepararImagenFeed(event) {
 
         previewImg.src = imagenFeedUrlTemporal;
         previewContainer.style.display = 'block';
-        statusLabel.innerText = "¡Imagen lista!";
+        statusLabel.innerText = "¡Listo!";
     } catch (error) {
         console.error("Error al subir imagen al feed:", error);
         alert("Error al subir la imagen.");
@@ -129,7 +136,7 @@ function publicarEnFeed() {
     const texto = textoInput.value.trim();
 
     if (!texto && !imagenFeedUrlTemporal) {
-        alert("Escribe un texto o adjunta una imagen para publicar.");
+        alert("Escribe algo o adjunta una imagen.");
         return;
     }
 
@@ -146,7 +153,7 @@ function publicarEnFeed() {
     dbRef.set(nuevoPost).then(() => {
         textoInput.value = "";
         limpiarImagenFeed();
-        console.log("Publicación enviada con éxito.");
+        console.log("Post publicado.");
     }).catch((err) => {
         console.error("Error al publicar:", err);
         alert("No se pudo enviar la publicación.");
@@ -163,7 +170,11 @@ function escucharPublicacionesFeed() {
         listaDiv.innerHTML = "";
         
         if (!snapshot.exists()) {
-            listaDiv.innerHTML = `<div style="text-align: center; color: #444; margin-top: 30px; font-size: 0.8rem;">No hay comunicados en el feed todavía. ¡Sé el primero!</div>`;
+            listaDiv.innerHTML = `
+                <div style="text-align: center; color: #555; margin-top: 50px; font-size: 0.85rem;">
+                    <div style="font-size: 2rem; margin-bottom: 8px;">📭</div>
+                    No hay publicaciones en el feed todavía.<br>¡Sé el primero en reportar!
+                </div>`;
             return;
         }
 
@@ -175,31 +186,67 @@ function escucharPublicacionesFeed() {
         posts.reverse();
 
         posts.forEach((post) => {
-            const fecha = post.timestamp ? new Date(post.timestamp).toLocaleString() : 'Hace un momento';
+            const fecha = post.timestamp ? formatearTiempoRelativo(post.timestamp) : 'Hace un momento';
+            const inicialAutor = post.autor ? post.autor.charAt(0).toUpperCase() : 'A';
             
             let imagenHtml = post.imagen ? `
-                <div style="margin-top: 8px;">
-                    <img src="${post.imagen}" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 4px; border: 1px solid #333;" loading="lazy">
+                <div style="margin-top: 10px; border-radius: 12px; overflow: hidden; background: #000; border: 1px solid #222;">
+                    <img src="${post.imagen}" style="width: 100%; max-height: 320px; object-fit: cover; display: block;" loading="lazy">
                 </div>
             ` : '';
 
             let card = document.createElement('div');
-            card.style.cssText = "background: #0a0a0a; border: 1px solid #222; border-left: 3px solid var(--neon-azul, #00f3ff); padding: 12px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.5);";
+            card.style.cssText = "background: #141414; border: 1px solid #222; border-radius: 14px; padding: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: border-color 0.2s;";
             
             card.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid #1a1a1a; padding-bottom: 4px;">
-                    <span style="font-weight: bold; color: var(--oro, #ffd700); font-size: 0.8rem;">[ ${ escaparHTMLFeed(post.autor) } ]</span>
-                    <span style="font-size: 0.65rem; color: #555;">${fecha}</span>
+                <!-- Cabecera del Post (Avatar + Nombre + Tiempo) -->
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 34px; height: 34px; border-radius: 50%; background: #222; border: 1px solid var(--neon-azul); color: var(--neon-azul); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;">
+                            ${inicialAutor}
+                        </div>
+                        <div>
+                            <div style="font-weight: 700; color: #fff; font-size: 0.88rem;">${ escaparHTMLFeed(post.autor) }</div>
+                            <div style="font-size: 0.7rem; color: #666;">${fecha}</div>
+                        </div>
+                    </div>
                 </div>
-                <div style="font-size: 0.85rem; color: #ddd; word-break: break-word; line-height: 1.4; margin-bottom: 6px;">
-                    ${ escaparHTMLFeed(post.texto).replace(/\n/g, '<br>') }
-                </div>
+
+                <!-- Contenido de Texto -->
+                ${post.texto ? `
+                    <div style="font-size: 0.9rem; color: #e0e0e0; word-break: break-word; line-height: 1.45; margin-bottom: 4px;">
+                        ${ escaparHTMLFeed(post.texto).replace(/\n/g, '<br>') }
+                    </div>
+                ` : ''}
+
+                <!-- Multimedia -->
                 ${imagenHtml}
+
+                <!-- Barra de interacciones estilo redes modernas -->
+                <div style="display: flex; align-items: center; gap: 16px; margin-top: 12px; padding-top: 8px; border-top: 1px solid #1e1e1e; font-size: 0.75rem; color: #777;">
+                    <button onclick="this.style.color = this.style.color === 'rgb(255, 51, 102)' ? '#777' : '#ff3366'; let c = this.querySelector('.like-count'); c.innerText = parseInt(c.innerText) + (this.style.color === 'rgb(255, 51, 102)' ? 1 : -1);" style="background: none; border: none; color: inherit; cursor: pointer; display: flex; align-items: center; gap: 4px; font-family: inherit; font-size: 0.8rem; padding: 0;">
+                        🔥 <span class="like-count">0</span>
+                    </button>
+                    <span style="display: flex; align-items: center; gap: 4px;">💬 Comentar</span>
+                </div>
             `;
 
             listaDiv.appendChild(card);
         });
     });
+}
+
+function formatearTiempoRelativo(timestamp) {
+    const ahora = Date.now();
+    const diff = ahora - timestamp;
+    const minutos = Math.floor(diff / 60000);
+    const horas = Math.floor(minutos / 60);
+    const dias = Math.floor(horas / 24);
+
+    if (minutos < 1) return 'Justo ahora';
+    if (minutos < 60) return `Hace ${minutos} min`;
+    if (horas < 24) return `Hace ${horas} h`;
+    return `Hace ${dias} d`;
 }
 
 function escaparHTMLFeed(texto) {
