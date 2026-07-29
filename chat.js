@@ -263,4 +263,4 @@ window.enviarMensaje = enviarMensaje;
 window.activarBengalaYHumio = activarBengalaYHumio;
 window.activarAlertaACAB = activarAlertaACAB;
 window.cargarMensajes = cargarMensajes;
-window.iniciarPresencia = iniciarPresencia;
+window. = iniciarPresencia;
