@@ -87,8 +87,15 @@
                     <input type="text" id="chat-in" placeholder="Escribe un mensaje..." onkeydown="if(event.key === 'Enter') enviarMensaje();">
                     <button class="send-btn" onclick="enviarMensaje()">➤</button>
                     <button id="btn-bengala-humo" class="smoke-btn" onclick="activarBengalaYHumio()">💨</button>
-                    <label class="image-btn" style="cursor: pointer;">
-                        📷<input type="file" accept="image/*,video/*" onchange="typeof enviarArchivoLocal === 'function' ? enviarArchivoLocal(event) : console.log('Sube archivo')" style="display: none;">
+                    
+                    <!-- Botón 1: Cámara Directa -->
+                    <label class="image-btn" style="cursor: pointer;" title="Tomar Foto/Video">
+                        📸<input type="file" accept="image/*,video/*" capture="environment" onchange="typeof enviarArchivoLocal === 'function' ? enviarArchivoLocal(event) : console.log('Sube archivo')" style="display: none;">
+                    </label>
+
+                    <!-- Botón 2: Galería / Archivos -->
+                    <label class="image-btn" style="cursor: pointer;" title="Subir desde Galería">
+                        📁<input type="file" accept="image/*,video/*" onchange="typeof enviarArchivoLocal === 'function' ? enviarArchivoLocal(event) : console.log('Sube archivo')" style="display: none;">
                     </label>
                 </div>
             </div>
