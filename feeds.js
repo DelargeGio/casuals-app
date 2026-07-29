@@ -2,6 +2,18 @@
 // FEEDS.JS - MURO INDUSTRIAL PUNK / COMUNICADOS
 // ======================================
 
+// Interceptar el cambio de vistas global para asegurar que el feed siempre cargue su HTML
+const originalRenderView = window.renderView;
+window.renderView = function(view) {
+    if (typeof originalRenderView === 'function') {
+        originalRenderView(view);
+    }
+    
+    if (view === 'feed') {
+        renderFeedContainer();
+    }
+};
+
 function renderFeed() {
     renderFeedContainer();
 }
@@ -19,10 +31,18 @@ function renderFeedContainer() {
         return;
     }
 
-    // Asegurar visibilidad correcta de las vistas
+    // Forzar visibilidad de las vistas
     feedContainer.style.display = 'flex';
+    feedContainer.style.flexDirection = 'column';
+    feedContainer.style.height = '100%';
+    
     if (mensajesContainer) {
         mensajesContainer.style.display = 'none';
+    }
+
+    // Si ya tiene contenido cargado, no lo reiniciamos para evitar parpadeos, a menos que esté vacío
+    if (feedContainer.innerHTML.trim() !== "" && document.getElementById('feed-posts-lista')) {
+        return;
     }
 
     // Estructura moderna con toque industrial punk
@@ -192,7 +212,6 @@ function escaparHTMLFeed(texto) {
         .replace(/'/g, "&#039;");
 }
 
-// Exponer globalmente todas las variantes posibles
 window.renderFeed = renderFeed;
 window.renderFeedContainer = renderFeedContainer;
 window.cargarFeed = cargarFeed;
