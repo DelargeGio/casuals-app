@@ -1,17 +1,6 @@
 // ======================================
-// FEEDS.JS - POSICIONAMIENTO ABSOLUTO MÓVIL (BLINDADO)
+// FEEDS.JS - POSICIONAMIENTO ABSOLUTO MÓVIL (BLINDADO Y LIMPIO)
 // ======================================
-
-const originalRenderView = window.renderView;
-window.renderView = function(view) {
-    if (typeof originalRenderView === 'function') {
-        originalRenderView(view);
-    }
-    
-    if (view === 'feed') {
-        renderFeedContainer();
-    }
-};
 
 function renderFeed() {
     renderFeedContainer();
@@ -22,8 +11,9 @@ function cargarFeed() {
 }
 
 function renderFeedContainer() {
-    const feedContainer = document.getElementById('feed-container');
-    const mensajesContainer = document.getElementById('mensajes-container');
+    // Usando caché global del DOM para evitar repintados y mejorar rendimiento en móviles
+    const feedContainer = window.DOM.feedContainer;
+    const mensajesContainer = window.DOM.mensajesContainer;
     
     if (!feedContainer) return;
 
@@ -167,7 +157,7 @@ function publicarEnFeed() {
 }
 
 function escucharPublicacionesFeed() {
-    const listaDiv = document.getElementById('feed-posts-lista');
+    const listaDiv = window.DOM.feedPostsLista;
     if (!listaDiv) return;
 
     const dbRef = window.db.ref('feed_posts').orderByChild('timestamp').limitToLast(30);
@@ -211,7 +201,7 @@ function escucharPublicacionesFeed() {
                             ${inicialAutor}
                         </div>
                         <div>
-                            <div style="font-weight: 700; color: #fff; font-size: 0.85rem;">${ escaparHTMLFeed(post.autor) }</div>
+                            <div style="font-weight: 700; color: #fff; font-size: 0.85rem;">${ window.escaparHTML(post.autor) }</div>
                             <div style="font-size: 0.65rem; color: #666;">${fecha}</div>
                         </div>
                     </div>
@@ -219,7 +209,7 @@ function escucharPublicacionesFeed() {
 
                 ${post.texto ? `
                     <div style="font-size: 0.85rem; color: #e0e0e0; word-break: break-word; line-height: 1.4; margin-bottom: 4px;">
-                        ${ escaparHTMLFeed(post.texto).replace(/\n/g, '<br>') }
+                        ${ window.escaparHTML(post.texto).replace(/\n/g, '<br>') }
                     </div>
                 ` : ''}
 
@@ -251,16 +241,7 @@ function formatearTiempoRelativo(timestamp) {
     return `Hace ${dias} d`;
 }
 
-function escaparHTMLFeed(texto) {
-    if (!texto) return '';
-    return texto
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
+// Asignaciones globales requeridas
 window.renderFeed = renderFeed;
 window.renderFeedContainer = renderFeedContainer;
 window.cargarFeed = cargarFeed;
