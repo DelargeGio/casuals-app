@@ -1,5 +1,5 @@
 // ======================================
-// MULTIMEDIA.JS - PROCESADOR Y SUBIDA BLINDADA DE FOTOS + NOTIFICACIONES
+// MULTIMEDIA.JS - PROCESADOR Y SUBIDA BLINDADA DE FOTOS + PUSH DIRECTO
 // ======================================
 
 function procesarContenidoMensaje(texto) {
@@ -62,7 +62,7 @@ function procesarContenidoMensaje(texto) {
 }
 
 // ======================================
-// ENVÍO DIRECTO Y SEGURO DE ARCHIVOS LOCALES (AHORA CON PUSH)
+// ENVÍO DIRECTO Y SEGURO DE ARCHIVOS LOCALES
 // ======================================
 
 async function enviarArchivoLocal(event) {
@@ -70,8 +70,6 @@ async function enviarArchivoLocal(event) {
     if (!file) return;
 
     const autor = localStorage.getItem("casuals_user") || "Agente Anónimo";
-    
-    // Feedback visual rápido en consola
     console.log("📤 Subiendo archivo multimedia:", file.name);
 
     try {
@@ -79,24 +77,24 @@ async function enviarArchivoLocal(event) {
         const fileName = `chat_media/${Date.now()}_${file.name}`;
         const fileRef = storageRef.child(fileName);
 
-        // Subimos el archivo directamente
         const snapshot = await fileRef.put(file);
         const downloadURL = await snapshot.ref.getDownloadURL();
 
         let contenidoHtml = "";
-        let tipoParaNotificacion = "archivo";
+        let tipoMultimedia = "archivo";
 
         if (file.type.startsWith('image/')) {
             contenidoHtml = `<div style="margin-bottom:4px;">📸 [Imagen compartida]</div><a href="${downloadURL}" target="_blank"><img src="${downloadURL}" style="max-width:100%; max-height:250px; border-radius:8px; border:1px solid var(--neon-azul); object-fit:cover;"></a>`;
-            tipoParaNotificacion = "📸 foto";
+            tipoMultimedia = "foto";
         } else if (file.type.startsWith('video/')) {
             contenidoHtml = `<video controls style="max-width:100%; max-height:250px; border-radius:8px; border:1px solid var(--oro);"><source src="${downloadURL}" type="${file.type}"></video>`;
-            tipoParaNotificacion = "🎥 video";
+            tipoMultimedia = "video";
         } else {
             contenidoHtml = `<a href="${downloadURL}" target="_blank" style="color:var(--neon-azul); text-decoration:underline;">📁 Archivo adjunto: ${file.name}</a>`;
+            tipoMultimedia = "archivo";
         }
 
-        // Mandamos el mensaje al chat
+        // 1. Guardar mensaje en la base de datos
         await firebase.database().ref('mensajes').push({
             autor: autor,
             texto: contenidoHtml,
@@ -104,22 +102,19 @@ async function enviarArchivoLocal(event) {
             timestamp: Date.now()
         });
 
-        // 🔔 ¡NUEVO!: Disparar notificación push a la cola
-        const icono = (typeof window.obtenerIconoUsuario === 'function') ? window.obtenerIconoUsuario(autor) : '👤';
-        firebase.database().ref('cola_notificaciones').push({
-            title: `${icono} ${autor} en el chat`,
-            body: `Envió un(a) ${tipoParaNotificacion}.`,
+        // 2. Forzar el registro inmediato en la cola de notificaciones
+        const iconoUser = (typeof window.obtenerIconoUsuario === 'function') ? window.obtenerIconoUsuario(autor) : '👤';
+        await firebase.database().ref('cola_notificaciones').push({
+            title: `${iconoUser} ${autor} compartió contenido`,
+            body: `Envió un nuevo ${tipoMultimedia} al chat.`,
             timestamp: firebase.database.ServerValue.TIMESTAMP
-        }).catch((err) => {
-            console.error("Error al encolar notificación push multimedia:", err);
         });
 
-        console.log("✅ Archivo enviado exitosamente y notificación encolada.");
+        console.log("✅ Archivo enviado y notificación encolada correctamente.");
     } catch (error) {
-        console.error("❌ Error crítico al subir archivo a Firebase Storage:", error);
-        alert("Error al enviar el archivo. Revisa los permisos de Firebase Storage.");
+        console.error("❌ Error crítico al subir archivo o notificar:", error);
+        alert("Error al enviar el archivo multimedia.");
     } finally {
-        // Limpiar input
         event.target.value = '';
     }
 }
