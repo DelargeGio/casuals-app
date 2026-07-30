@@ -79,15 +79,27 @@ function reproducirEfectoBengala() {
 }
 
 // ======================================
+// FUNCIÓN AUXILIAR PARA DISPARAR PUSH EN FIREBASE
+// ======================================
+function dispararRegistroPush(titulo, cuerpo) {
+    if (typeof firebase !== 'undefined') {
+        firebase.database().ref('cola_notificaciones').push({
+            title: titulo,
+            body: cuerpo,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).catch((err) => {
+            console.error("Error al encolar notificación push:", err);
+        });
+    }
+}
+
+// ======================================
 // FUNCIONES DE ENVÍO Y ACCIONES DE CHAT
 // ======================================
 
 function enviarMensaje() {
     const input = document.getElementById("chat-in");
-    if (!input) {
-        console.error("No se encontró el input #chat-in");
-        return;
-    }
+    if (!input) return;
     const texto = input.value.trim();
     if (!texto) return;
 
@@ -101,12 +113,16 @@ function enviarMensaje() {
             tiempo: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             timestamp: Date.now()
         });
+
+        const icono = obtenerIconoUsuario(usuario);
+        dispararRegistroPush(`${icono} ${usuario} en el chat`, texto);
     }
     
     input.value = "";
     if (typeof vibrar === "function") vibrar(30);
 }
 
+// BOTÓN BENGALA: SOLO EFECTOS LOCALES
 function activarBengalaYHumio() {
     reproducirEfectoBengala();
 }
@@ -120,12 +136,17 @@ function activarAlertaACAB() {
             const linkMapa = `https://www.google.com/maps?q=${lat},${lng}`;
             
             if (typeof firebase !== 'undefined') {
+                const textoAlerta = `🚨 ¡ALERTA A.C.A.B.! 🚨 Ubicación exacta: ${linkMapa}`;
+                
                 firebase.database().ref('mensajes').push({
                     autor: usuario,
-                    texto: `🚨 ¡ALERTA A.C.A.B.! 🚨 Ubicación exacta: ${linkMapa}`,
+                    texto: textoAlerta,
                     tiempo: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     timestamp: Date.now()
                 });
+
+                const icono = obtenerIconoUsuario(usuario);
+                dispararRegistroPush(`🚨 EMERGENCIA: ${icono} ${usuario}`, `¡Alerta A.C.A.B. activada! Toca para ver la ubicación.`);
             }
         }, () => {
             alert("No se pudo obtener la ubicación o estás en entorno local sin HTTPS.");
@@ -134,7 +155,26 @@ function activarAlertaACAB() {
 }
 
 // ======================================
-// PROCESADOR DE MULTIMEDIA BLINDADO (SHORTS Y VIDEOS)
+// VISOR DE IMÁGENES A PANTALLA COMPLETA (LIGHTBOX CHAT)
+// ======================================
+function abrirImagenModal(url) {
+    let modal = document.getElementById('casuals-image-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'casuals-image-modal';
+        modal.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;";
+        modal.innerHTML = `
+            <button onclick="document.getElementById('casuals-image-modal').style.display='none'" style="position: absolute; top: 20px; right: 20px; background: #000; border: 2px solid var(--neon-azul, #00f2ff); color: #fff; font-size: 1.2rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold;">✕</button>
+            <img id="modal-img-content" src="" style="max-width: 100%; max-height: 85vh; object-fit: contain; border: 1px solid var(--oro, #d4af37); border-radius: 8px;">
+        `;
+        document.body.appendChild(modal);
+    }
+    document.getElementById('modal-img-content').src = url;
+    modal.style.display = 'flex';
+}
+
+// ======================================
+// PROCESADOR DE MULTIMEDIA BLINDADO (SHORTS, VIDEOS E IMÁGENES)
 // ======================================
 
 function procesarContenidoMensaje(texto) {
@@ -142,6 +182,7 @@ function procesarContenidoMensaje(texto) {
 
     let htmlModificado = texto;
 
+    // 1. Detección exacta para YouTube Shorts
     const ytShortsRegex = /(?:https?:\/\/)?(?:www\.)?youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})(?:\S+)?/g;
     if (ytShortsRegex.test(texto)) {
         ytShortsRegex.lastIndex = 0;
@@ -162,6 +203,7 @@ function procesarContenidoMensaje(texto) {
         return htmlModificado;
     }
 
+    // 2. Detección para YouTube Normal
     const ytNormalRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S+)?/g;
     if (ytNormalRegex.test(texto)) {
         ytNormalRegex.lastIndex = 0;
@@ -182,6 +224,21 @@ function procesarContenidoMensaje(texto) {
         return htmlModificado;
     }
 
+    // 3. Detección automática de enlaces de imágenes directas en el texto del chat para abrirlas en grande
+    const imgUrlRegex = /(https?:\/\/[^\s]+\.(?:png|jpg|jpeg|webp|gif))/gi;
+    if (imgUrlRegex.test(texto)) {
+        imgUrlRegex.lastIndex = 0;
+        htmlModificado = htmlModificado.replace(imgUrlRegex, (imgUrl) => {
+            return `
+                <div class="multimedia-box" style="margin-top: 8px; cursor: pointer;" onclick="abrirImagenModal('${imgUrl}')">
+                    <img src="${imgUrl}" style="width: 100%; max-height: 220px; object-fit: cover; border-radius: 6px; border: 1px solid var(--oro);" loading="lazy">
+                </div>
+            `;
+        });
+        return htmlModificado;
+    }
+
+    // 4. Enlaces normales (texto plano clickeable)
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     htmlModificado = htmlModificado.replace(urlRegex, (url) => {
         return `<a href="${url}" target="_blank" style="color: var(--neon-azul); text-decoration: underline; word-break: break-all;">${url}</a>`;
@@ -190,6 +247,7 @@ function procesarContenidoMensaje(texto) {
     return `<p class="texto-mensaje">${htmlModificado}</p>`;
 }
 
+// Listener para cargar mensajes de Firebase en tiempo real
 function cargarMensajes() {
     const lista = document.getElementById("mensajes-lista");
     if (!lista) return;
@@ -274,92 +332,7 @@ function iniciarPresencia() {
     });
 }
 
-// ======================================
-// SCRIPT.JS - ROUTER MAESTRO FLEX
-// ======================================
-
-window.DOM = {
-    get feedContainer() { return document.getElementById('feed-container'); },
-    get mensajesContainer() { return document.getElementById('mensajes-container'); },
-    get feedPostsLista() { return document.getElementById('feed-posts-lista'); },
-    get inputTextoFeed() { return document.getElementById('feed-input-texto'); }
-};
-
-window.escaparHTML = function(texto) {
-    if (!texto) return '';
-    return texto
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-};
-
-window.renderView = function(view) {
-    console.log(`[Router] Navegando a vista: ${view}`);
-
-    const feedCont = window.DOM.feedContainer;
-    const msjCont = window.DOM.mensajesContainer;
-
-    if (feedCont) feedCont.style.display = 'none';
-    if (msjCont) msjCont.style.display = 'none';
-
-    switch(view) {
-        case 'feed':
-            if (feedCont) {
-                feedCont.style.display = 'block';
-            }
-            if (typeof window.renderFeedContainer === 'function') {
-                window.renderFeedContainer();
-            }
-            break;
-            
-        case 'chat':
-            if (msjCont) {
-                msjCont.style.display = 'flex';
-                msjCont.style.flexDirection = 'column';
-                msjCont.style.position = '';
-                msjCont.style.top = '';
-                msjCont.style.bottom = '';
-                msjCont.style.left = '';
-                msjCont.style.right = '';
-            }
-            cargarMensajes();
-            iniciarPresencia();
-            break;
-
-        default:
-            console.warn(`Vista desconocida: ${view}`);
-            break;
-    }
-};
-
-// ======================================
-// INICIALIZACIÓN Y FALLBACK DE VISTA BLINDADO
-// ======================================
-
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("⚡ CASUALS CORE // Sistema inicializado correctamente.");
-
-    let usuarioActual = localStorage.getItem("casuals_user");
-    if (!usuarioActual || usuarioActual.trim() === "") {
-        usuarioActual = "Agente_" + Math.floor(Math.random() * 9000 + 1000);
-        localStorage.setItem("casuals_user", usuarioActual);
-    }
-
-    if (typeof window.renderView === 'function') {
-        window.renderView('chat');
-    } else {
-        const msjCont = document.getElementById('mensajes-container');
-        if (msjCont) {
-            msjCont.style.display = 'flex';
-        }
-        cargarMensajes();
-        iniciarPresencia();
-    }
-});
-
-// Exposición global limpia
+// Exponer funciones globalmente de forma limpia
 window.obtenerColorUsuario = obtenerColorUsuario;
 window.obtenerIconoUsuario = obtenerIconoUsuario;
 window.enviarMensaje = enviarMensaje;
@@ -367,3 +340,4 @@ window.activarBengalaYHumio = activarBengalaYHumio;
 window.activarAlertaACAB = activarAlertaACAB;
 window.cargarMensajes = cargarMensajes;
 window.iniciarPresencia = iniciarPresencia;
+window.abrirImagenModal = abrirImagenModal;
