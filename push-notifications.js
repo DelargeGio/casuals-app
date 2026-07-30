@@ -8,7 +8,6 @@ function inicializarNotificacionesPush() {
         return;
     }
 
-    // Usar ruta relativa ('./firebase-messaging-sw.js') para evitar conflictos de rutas en GitHub Pages
     navigator.serviceWorker.register('./firebase-messaging-sw.js')
         .then((registration) => {
             console.log('✅ Service Worker registrado con éxito:', registration);
@@ -20,12 +19,10 @@ function inicializarNotificacionesPush() {
             
             const messaging = firebase.messaging();
 
-            // Solicitar permiso de notificaciones al usuario
             Notification.requestPermission().then((permission) => {
                 if (permission === 'granted') {
                     console.log('✅ Permiso de notificaciones concedido.');
 
-                    // Obtener el Token FCM del dispositivo
                     messaging.getToken().then((currentToken) => {
                         if (currentToken) {
                             console.log('🔥 Token FCM obtenido:', currentToken);
@@ -43,7 +40,7 @@ function inicializarNotificacionesPush() {
             });
         })
         .catch((err) => {
-            console.error('❌ Error detallado al registrar el SW:', err.message || err);
+            console.error('❌ Error al registrar el SW:', err);
         });
 }
 
@@ -64,7 +61,6 @@ function guardarTokenEnFirebase(token) {
     }
 }
 
-// Ejecutar al cargar la app con un pequeño respiro
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(inicializarNotificacionesPush, 2500);
 });
