@@ -11,26 +11,29 @@ firebase.initializeApp({
     appId: "1:552015693448:web:e3cdb8df21007b5a27c13d"
 });
 
-const db = firebase.database();
+try {
+    const db = firebase.database();
 
-// Escuchar en tiempo real la cola de notificaciones directamente desde la base de datos
-db.ref('cola_notificaciones').limitToLast(1).on('child_added', (snapshot) => {
-    const notifData = snapshot.val();
-    if (!notifData) return;
+    // Escuchar la cola de notificaciones de forma segura
+    db.ref('cola_notificaciones').limitToLast(1).on('child_added', (snapshot) => {
+        const notifData = snapshot.val();
+        if (!notifData) return;
 
-    // Evitar disparar notificaciones viejas al abrir la app comprobando el tiempo (últimos 10 segundos)
-    const ahora = Date.now();
-    if (notifData.timestamp && (ahora - notifData.timestamp > 10000)) {
-        return;
-    }
+        const ahora = Date.now();
+        if (notifData.timestamp && (ahora - notifData.timestamp > 15000)) {
+            return;
+        }
 
-    const title = notifData.title || "🚨 Alerta CASUALS";
-    const options = {
-        body: notifData.body || "Nuevo mensaje en la red.",
-        icon: '/img/banner.png',
-        badge: '/img/banner.png',
-        vibrate: [200, 100, 200]
-    };
+        const title = notifData.title || "🚨 Alerta CASUALS";
+        const options = {
+            body: notifData.body || "Nuevo movimiento en la red.",
+            icon: '/img/banner.png',
+            badge: '/img/banner.png',
+            vibrate: [200, 100, 200]
+        };
 
-    self.registration.showNotification(title, options);
-});
+        self.registration.showNotification(title, options);
+    });
+} catch (e) {
+    console.error("Error al iniciar escucha en Service Worker:", e);
+}
