@@ -326,10 +326,8 @@ window.renderView = function(view) {
             
         case 'chat':
             if (msjCont) {
-                // Restauramos display flex para que el chat y los botones del CSS original seacomoden bien
                 msjCont.style.display = 'flex';
                 msjCont.style.flexDirection = 'column';
-                // Limpiamos cualquier posición absoluta forzada
                 msjCont.style.position = '';
                 msjCont.style.top = '';
                 msjCont.style.bottom = '';
@@ -346,10 +344,29 @@ window.renderView = function(view) {
     }
 };
 
+// ======================================
+// INICIALIZACIÓN Y FALLBACK DE VISTA BLINDADO
+// ======================================
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log("⚡ CASUALS CORE // Sistema inicializado correctamente.");
-    setTimeout(() => {
+
+    // 1. Asignar usuario temporal si no existe para evitar bloqueos en nuevos dispositivos
+    let usuarioActual = localStorage.getItem("casuals_user");
+    if (!usuarioActual || usuarioActual.trim() === "") {
+        usuarioActual = "Agente_" + Math.floor(Math.random() * 9000 + 1000);
+        localStorage.setItem("casuals_user", usuarioActual);
+    }
+
+    // 2. Forzar vista inicial por defecto (chat) para evitar pantalla en blanco
+    if (typeof window.renderView === 'function') {
+        window.renderView('chat');
+    } else {
+        const msjCont = document.getElementById('mensajes-container');
+        if (msjCont) {
+            msjCont.style.display = 'flex';
+        }
         cargarMensajes();
         iniciarPresencia();
-    }, 300);
+    }
 });
