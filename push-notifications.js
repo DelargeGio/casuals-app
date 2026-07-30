@@ -31,16 +31,19 @@ function inicializarNotificacionesPush() {
                             console.log('⚠️ No se pudo obtener el token de registro.');
                         }
                     }).catch((err) => {
-                        console.error('❌ Error al recuperar el token de mensajería:', err);
+                        console.error('❌ Error Token:', err.message, err);
                     });
 
                 } else {
-                    console.log('❌ Permiso de notificaciones denegado por el usuario.');
+                    console.log('❌ Permiso de notificaciones denegado.');
                 }
             });
         })
         .catch((err) => {
-            console.error('❌ Error al registrar el SW:', err);
+            // Imprimir propiedades explícitas para evitar el objeto vacío en Eruda
+            console.error('❌ Fallo SW Name:', err.name);
+            console.error('❌ Fallo SW Message:', err.message);
+            console.error('❌ Fallo SW Stack:', err.stack);
         });
 }
 
@@ -54,9 +57,9 @@ function guardarTokenEnFirebase(token) {
             token: token,
             actualizado: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
-            console.log('💾 Token guardado correctamente en Firebase.');
+            console.log('💾 Token guardado en Firebase.');
         }).catch((err) => {
-            console.error('❌ Error al guardar el token en Firebase:', err);
+            console.error('❌ Error Firebase Token:', err.message);
         });
     }
 }
