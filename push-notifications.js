@@ -8,11 +8,7 @@ function inicializarNotificacionesPush() {
         return;
     }
 
-    // Detectar ruta base automáticamente para GitHub Pages o entorno local
-    const swUrl = './firebase-messaging-sw.js';
-    console.log("Intentando registrar SW en:", swUrl);
-
-    navigator.serviceWorker.register(swUrl)
+    navigator.serviceWorker.register('./firebase-messaging-sw.js')
         .then((registration) => {
             console.log('✅ Service Worker registrado con éxito:', registration.scope);
 
@@ -27,16 +23,18 @@ function inicializarNotificacionesPush() {
                 if (permission === 'granted') {
                     console.log('✅ Permiso de notificaciones concedido.');
 
-                    messaging.getToken().then((currentToken) => {
-                        if (currentToken) {
-                            console.log('🔥 Token FCM obtenido:', currentToken);
-                            guardarTokenEnFirebase(currentToken);
-                        } else {
-                            console.log('⚠️ No se pudo obtener el token de registro.');
-                        }
-                    }).catch((err) => {
-                        console.error('❌ Error Token:', err);
-                    });
+                    // Pasar explícitamente la registration para evitar el fallo de enlace
+                    messaging.getToken({ serviceWorkerRegistration: registration })
+                        .then((currentToken) => {
+                            if (currentToken) {
+                                console.log('🔥 Token FCM obtenido:', currentToken);
+                                guardarTokenEnFirebase(currentToken);
+                            } else {
+                                console.log('⚠️ No se pudo obtener el token de registro.');
+                            }
+                        }).catch((err) => {
+                            console.error('❌ Error al recuperar el token de mensajería:', err);
+                        });
 
                 } else {
                     console.log('❌ Permiso de notificaciones denegado.');
@@ -44,10 +42,7 @@ function inicializarNotificacionesPush() {
             });
         })
         .catch((error) => {
-            // Imprimir de forma segura las propiedades de cadena del error
-            console.error('❌ Error crítico en Service Worker:', error ? error.toString() : 'Desconocido');
-            if (error && error.message) console.error('Mensaje:', error.message);
-            if (error && error.stack) console.error('Stack:', error.stack);
+            console.error('❌ Error crítico en Service Worker:', error);
         });
 }
 
