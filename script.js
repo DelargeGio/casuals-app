@@ -274,15 +274,6 @@ function iniciarPresencia() {
     });
 }
 
-// Exponer funciones globalmente
-window.obtenerColorUsuario = obtenerColorUsuario;
-window.obtenerIconoUsuario = obtenerIconoUsuario;
-window.enviarMensaje = enviarMensaje;
-window.activarBengalaYHumio = activarBengalaYHumio;
-window.activarAlertaACAB = activarAlertaACAB;
-window.cargarMensajes = cargarMensajes;
-window.iniciarPresencia = iniciarPresencia;
-
 // ======================================
 // SCRIPT.JS - ROUTER MAESTRO FLEX
 // ======================================
@@ -310,7 +301,6 @@ window.renderView = function(view) {
     const feedCont = window.DOM.feedContainer;
     const msjCont = window.DOM.mensajesContainer;
 
-    // Ocultar todo por defecto
     if (feedCont) feedCont.style.display = 'none';
     if (msjCont) msjCont.style.display = 'none';
 
@@ -351,14 +341,12 @@ window.renderView = function(view) {
 document.addEventListener('DOMContentLoaded', () => {
     console.log("⚡ CASUALS CORE // Sistema inicializado correctamente.");
 
-    // 1. Asignar usuario temporal si no existe para evitar bloqueos en nuevos dispositivos
     let usuarioActual = localStorage.getItem("casuals_user");
     if (!usuarioActual || usuarioActual.trim() === "") {
         usuarioActual = "Agente_" + Math.floor(Math.random() * 9000 + 1000);
         localStorage.setItem("casuals_user", usuarioActual);
     }
 
-    // 2. Forzar vista inicial por defecto (chat) para evitar pantalla en blanco
     if (typeof window.renderView === 'function') {
         window.renderView('chat');
     } else {
@@ -370,3 +358,12 @@ document.addEventListener('DOMContentLoaded', () => {
         iniciarPresencia();
     }
 });
+
+// Exposición global limpia
+window.obtenerColorUsuario = obtenerColorUsuario;
+window.obtenerIconoUsuario = obtenerIconoUsuario;
+window.enviarMensaje = enviarMensaje;
+window.activarBengalaYHumio = activarBengalaYHumio;
+window.activarAlertaACAB = activarAlertaACAB;
+window.cargarMensajes = cargarMensajes;
+window.iniciarPresencia = iniciarPresencia;
