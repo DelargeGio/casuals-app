@@ -13,17 +13,18 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
     
-    <!-- 2. INICIALIZACIÓN DIRECTA (INLINE) PARA EVITAR ERRORES DE CARPETA -->
+    <!-- 2. INICIALIZACIÓN DIRECTA (INLINE) -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyAxvm2p6CzSOXJlR5m1JX-jWKkf_0S6oPc",
             authDomain: "casuals-8-32a4d.firebaseapp.com",
             databaseURL: "https://casuals-8-32a4d-default-rtdb.firebaseio.com/",
             projectId: "casuals-8-32a4d",
-            storageBucket: "casuals-8-32a4d.appspot.com",
-            messagingSenderId: "TU_MESSAGING_SENDER_ID",
-            appId: "TU_APP_ID"
+            storageBucket: "casuals-8-32a4d.firebasestorage.app",
+            messagingSenderId: "552015693448",
+            appId: "1:552015693448:web:e3cdb8df21007b5a27c13d"
         };
 
         try {
@@ -88,12 +89,12 @@
                     <button class="send-btn" onclick="enviarMensaje()">➤</button>
                     <button id="btn-bengala-humo" class="smoke-btn" onclick="activarBengalaYHumio()">💨</button>
                     
-                    <!-- Botón 1: Cámara Directa (Forzada para Chrome quitando video/*) -->
+                    <!-- Botón 1: Cámara Directa -->
                     <label class="image-btn" style="cursor: pointer;" title="Tomar Foto">
                         📸<input type="file" accept="image/*" capture="environment" onchange="typeof enviarArchivoLocal === 'function' ? enviarArchivoLocal(event) : console.log('Sube archivo')" style="display: none;">
                     </label>
 
-                    <!-- Botón 2: Galería / Archivos (Acepta fotos y videos guardados) -->
+                    <!-- Botón 2: Galería / Archivos -->
                     <label class="image-btn" style="cursor: pointer;" title="Subir desde Galería">
                         📁<input type="file" accept="image/*,video/*" onchange="typeof enviarArchivoLocal === 'function' ? enviarArchivoLocal(event) : console.log('Sube archivo')" style="display: none;">
                     </label>
@@ -115,6 +116,8 @@
     <script src="chat.js?v=neon_definitivo_4"></script>
     <script src="feeds.js?v=neon_definitivo_4"></script>
     <script src="panic.js?v=neon_definitivo_4"></script>
+    <script src="alertas.js?v=neon_definitivo_4"></script>
+    <script src="push-notifications.js?v=neon_definitivo_4"></script>
     <script src="script.js?v=neon_definitivo_4"></script>
     <script src="sw.js"></script>
     
