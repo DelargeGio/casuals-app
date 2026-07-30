@@ -79,6 +79,21 @@ function reproducirEfectoBengala() {
 }
 
 // ======================================
+// FUNCIÓN AUXILIAR PARA DISPARAR PUSH EN FIREBASE
+// ======================================
+function dispararRegistroPush(titulo, cuerpo) {
+    if (typeof firebase !== 'undefined') {
+        firebase.database().ref('cola_notificaciones').push({
+            title: titulo,
+            body: cuerpo,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).catch((err) => {
+            console.error("Error al encolar notificación push:", err);
+        });
+    }
+}
+
+// ======================================
 // FUNCIONES DE ENVÍO Y ACCIONES DE CHAT
 // ======================================
 
@@ -98,6 +113,10 @@ function enviarMensaje() {
             tiempo: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             timestamp: Date.now()
         });
+
+        // 🔔 Disparar push discreta para el chat general
+        const icono = obtenerIconoUsuario(usuario);
+        dispararRegistroPush(`${icono} ${usuario} en el chat`, texto);
     }
     
     input.value = "";
@@ -118,12 +137,18 @@ function activarAlertaACAB() {
             const linkMapa = `https://www.google.com/maps?q=${lat},${lng}`;
             
             if (typeof firebase !== 'undefined') {
+                const textoAlerta = `🚨 ¡ALERTA A.C.A.B.! 🚨 Ubicación exacta: ${linkMapa}`;
+                
                 firebase.database().ref('mensajes').push({
                     autor: usuario,
-                    texto: `🚨 ¡ALERTA A.C.A.B.! 🚨 Ubicación exacta: ${linkMapa}`,
+                    texto: textoAlerta,
                     tiempo: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     timestamp: Date.now()
                 });
+
+                // 🚨 Disparar push de alta prioridad para el botón de pánico
+                const icono = obtenerIconoUsuario(usuario);
+                dispararRegistroPush(`🚨 EMERGENCIA: ${icono} ${usuario}`, `¡Alerta A.C.A.B. activada! Toca para ver la ubicación.`);
             }
         }, () => {
             alert("No se pudo obtener la ubicación o estás en entorno local sin HTTPS.");
