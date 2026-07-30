@@ -1,5 +1,5 @@
 // ======================================
-// MULTIMEDIA.JS - PROCESADOR Y SUBIDA BLINDADA
+// MULTIMEDIA.JS - STORAGE OFICIAL CON MANEJO DE ERRORES
 // ======================================
 
 function procesarContenidoMensaje(texto) {
@@ -62,7 +62,7 @@ function procesarContenidoMensaje(texto) {
 }
 
 // ======================================
-// ENVÍO DE ARCHIVOS LOCALES (BLINDADO)
+// ENVÍO DE ARCHIVOS A FIREBASE STORAGE
 // ======================================
 
 async function enviarArchivoLocal(event) {
@@ -70,60 +70,77 @@ async function enviarArchivoLocal(event) {
     if (!file) return;
 
     const autor = localStorage.getItem("casuals_user") || "Agente Anónimo";
-    console.log("📤 Preparando subida de archivo:", file.name);
+    console.log("📤 Subiendo archivo a Storage:", file.name);
 
-    // Feedback visual inmediato en consola de usuario
-    alert("Subiendo archivo, espera un momento...");
+    // Notificación en pantalla de que empezó la subida
+    const toastId = "toast-subida-" + Date.now();
+    console.log("Subiendo archivo, por favor espera...");
 
     try {
         if (!firebase.storage) {
-            throw new Error("Firebase Storage no está disponible en este entorno.");
+            throw new Error("Firebase Storage no está inicializado.");
         }
 
         const storageRef = firebase.storage().ref();
-        const fileName = `chat_media/${Date.now()}_${file.name}`;
-        const fileRef = storageRef.child(fileName);
+        const filePath = `chat_uploads/${Date.now()}_${file.name}`;
+        const fileRef = storageRef.child(filePath);
 
-        // Subida con snapshot
-        const snapshot = await fileRef.put(file);
-        const downloadURL = await snapshot.ref.getDownloadURL();
+        // Subida real con control de progreso
+        const uploadTask = fileRef.put(file);
 
-        let contenidoHtml = "";
-        let tipoMultimedia = "archivo";
+        uploadTask.on('state_changed', 
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                console.log(`Progreso de subida: ${progress.toFixed(0)}%`);
+            }, 
+            (error) => {
+                console.error("❌ Error en la subida de Storage:", error);
+                alert("Fallo al subir archivo: " + error.message);
+                event.target.value = '';
+            }, 
+            async () => {
+                // Subida completada con éxito, obtenemos URL pública
+                const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                
+                let contenidoHtml = "";
+                let tipoMultimedia = "archivo";
 
-        if (file.type.startsWith('image/')) {
-            contenidoHtml = `<div style="margin-bottom:4px;">📸 [Imagen compartida]</div><a href="${downloadURL}" target="_blank"><img src="${downloadURL}" style="max-width:100%; max-height:250px; border-radius:8px; border:1px solid var(--neon-azul); object-fit:cover;"></a>`;
-            tipoMultimedia = "foto";
-        } else if (file.type.startsWith('video/')) {
-            contenidoHtml = `<video controls style="max-width:100%; max-height:250px; border-radius:8px; border:1px solid var(--oro);"><source src="${downloadURL}" type="${file.type}"></video>`;
-            tipoMultimedia = "video";
-        } else {
-            contenidoHtml = `<a href="${downloadURL}" target="_blank" style="color:var(--neon-azul); text-decoration:underline;">📁 Archivo adjunto: ${file.name}</a>`;
-            tipoMultimedia = "archivo";
-        }
+                if (file.type.startsWith('image/')) {
+                    contenidoHtml = `<div style="margin-bottom:4px;">📸 [Imagen]</div><a href="${downloadURL}" target="_blank"><img src="${downloadURL}" style="max-width:100%; max-height:250px; border-radius:8px; border:1px solid var(--neon-azul); object-fit:cover;"></a>`;
+                    tipoMultimedia = "foto";
+                } else if (file.type.startsWith('video/')) {
+                    contenidoHtml = `<video controls style="max-width:100%; max-height:250px; border-radius:8px; border:1px solid var(--oro);"><source src="${downloadURL}" type="${file.type}"></video>`;
+                    tipoMultimedia = "video";
+                } else {
+                    contenidoHtml = `<a href="${downloadURL}" target="_blank" style="color:var(--neon-azul); text-decoration:underline;">📁 Archivo: ${file.name}</a>`;
+                    tipoMultimedia = "archivo";
+                }
 
-        // 1. Guardar mensaje en la base de datos
-        await firebase.database().ref('mensajes').push({
-            autor: autor,
-            texto: contenidoHtml,
-            tiempo: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            timestamp: Date.now()
-        });
+                // Guardar mensaje en Realtime Database
+                await firebase.database().ref('mensajes').push({
+                    autor: autor,
+                    texto: contenidoHtml,
+                    tiempo: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    timestamp: Date.now()
+                });
 
-        // 2. Registrar en la cola de notificaciones
-        const iconoUser = (typeof window.obtenerIconoUsuario === 'function') ? window.obtenerIconoUsuario(autor) : '👤';
-        await firebase.database().ref('cola_notificaciones').push({
-            title: `${iconoUser} ${autor} compartió contenido`,
-            body: `Envió un nuevo ${tipoMultimedia} al chat.`,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
-        });
+                // Registrar en cola de notificaciones
+                const iconoUser = (typeof window.obtenerIconoUsuario === 'function') ? window.obtenerIconoUsuario(autor) : '👤';
+                await firebase.database().ref('cola_notificaciones').push({
+                    title: `${iconoUser} ${autor} compartió contenido`,
+                    body: `Envió un nuevo ${tipoMultimedia} al chat.`,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
 
-        console.log("✅ Archivo enviado con éxito.");
+                console.log("✅ Archivo subido y mensaje publicado con éxito.");
+                event.target.value = '';
+            }
+        );
+
     } catch (error) {
-        console.error("❌ Error crítico al subir archivo:", error);
-        alert("Error al subir archivo: " + (error.message || error));
-    } finally {
-        event.target.value = ''; // Limpiar input
+        console.error("❌ Error crítico en función de archivo:", error);
+        alert("Error: " + error.message);
+        event.target.value = '';
     }
 }
 
