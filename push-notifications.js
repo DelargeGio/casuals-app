@@ -8,9 +8,13 @@ function inicializarNotificacionesPush() {
         return;
     }
 
-    navigator.serviceWorker.register('./firebase-messaging-sw.js')
+    // Detectar ruta base automáticamente para GitHub Pages o entorno local
+    const swUrl = './firebase-messaging-sw.js';
+    console.log("Intentando registrar SW en:", swUrl);
+
+    navigator.serviceWorker.register(swUrl)
         .then((registration) => {
-            console.log('✅ Service Worker registrado con éxito:', registration);
+            console.log('✅ Service Worker registrado con éxito:', registration.scope);
 
             if (typeof firebase === 'undefined') {
                 console.warn('⚠️ Firebase no está definido todavía.');
@@ -31,7 +35,7 @@ function inicializarNotificacionesPush() {
                             console.log('⚠️ No se pudo obtener el token de registro.');
                         }
                     }).catch((err) => {
-                        console.error('❌ Error Token:', err.message, err);
+                        console.error('❌ Error Token:', err);
                     });
 
                 } else {
@@ -39,11 +43,11 @@ function inicializarNotificacionesPush() {
                 }
             });
         })
-        .catch((err) => {
-            // Imprimir propiedades explícitas para evitar el objeto vacío en Eruda
-            console.error('❌ Fallo SW Name:', err.name);
-            console.error('❌ Fallo SW Message:', err.message);
-            console.error('❌ Fallo SW Stack:', err.stack);
+        .catch((error) => {
+            // Imprimir de forma segura las propiedades de cadena del error
+            console.error('❌ Error crítico en Service Worker:', error ? error.toString() : 'Desconocido');
+            if (error && error.message) console.error('Mensaje:', error.message);
+            if (error && error.stack) console.error('Stack:', error.stack);
         });
 }
 
@@ -59,7 +63,7 @@ function guardarTokenEnFirebase(token) {
         }).then(() => {
             console.log('💾 Token guardado en Firebase.');
         }).catch((err) => {
-            console.error('❌ Error Firebase Token:', err.message);
+            console.error('❌ Error Firebase Token:', err);
         });
     }
 }
