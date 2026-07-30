@@ -8,6 +8,8 @@ function inicializarNotificacionesPush() {
         return;
     }
 
+    console.log("Intentando registrar SW...");
+
     navigator.serviceWorker.register('./firebase-messaging-sw.js')
         .then((registration) => {
             console.log('✅ Service Worker registrado con éxito:', registration.scope);
@@ -23,18 +25,20 @@ function inicializarNotificacionesPush() {
                 if (permission === 'granted') {
                     console.log('✅ Permiso de notificaciones concedido.');
 
-                    // Pasar explícitamente la registration para evitar el fallo de enlace
-                    messaging.getToken({ serviceWorkerRegistration: registration })
-                        .then((currentToken) => {
-                            if (currentToken) {
-                                console.log('🔥 Token FCM obtenido:', currentToken);
-                                guardarTokenEnFirebase(currentToken);
-                            } else {
-                                console.log('⚠️ No se pudo obtener el token de registro.');
-                            }
-                        }).catch((err) => {
-                            console.error('❌ Error al recuperar el token de mensajería:', err);
-                        });
+                    // Esperar a que el Service Worker esté completamente listo y activo
+                    navigator.serviceWorker.ready.then((swRegistration) => {
+                        messaging.getToken({ serviceWorkerRegistration: swRegistration })
+                            .then((currentToken) => {
+                                if (currentToken) {
+                                    console.log('🔥 Token FCM obtenido:', currentToken);
+                                    guardarTokenEnFirebase(currentToken);
+                                } else {
+                                    console.log('⚠️ No se pudo obtener el token de registro.');
+                                }
+                            }).catch((err) => {
+                                console.error('❌ Error al recuperar el token de mensajería:', err);
+                            });
+                    });
 
                 } else {
                     console.log('❌ Permiso de notificaciones denegado.');
