@@ -1,5 +1,5 @@
 // ======================================
-// MULTIMEDIA.JS - PROCESADOR Y SUBIDA BLINDADA DE FOTOS + PUSH DIRECTO
+// MULTIMEDIA.JS - PROCESADOR Y SUBIDA BLINDADA
 // ======================================
 
 function procesarContenidoMensaje(texto) {
@@ -62,7 +62,7 @@ function procesarContenidoMensaje(texto) {
 }
 
 // ======================================
-// ENVÍO DIRECTO Y SEGURO DE ARCHIVOS LOCALES
+// ENVÍO DE ARCHIVOS LOCALES (BLINDADO)
 // ======================================
 
 async function enviarArchivoLocal(event) {
@@ -70,13 +70,21 @@ async function enviarArchivoLocal(event) {
     if (!file) return;
 
     const autor = localStorage.getItem("casuals_user") || "Agente Anónimo";
-    console.log("📤 Subiendo archivo multimedia:", file.name);
+    console.log("📤 Preparando subida de archivo:", file.name);
+
+    // Feedback visual inmediato en consola de usuario
+    alert("Subiendo archivo, espera un momento...");
 
     try {
+        if (!firebase.storage) {
+            throw new Error("Firebase Storage no está disponible en este entorno.");
+        }
+
         const storageRef = firebase.storage().ref();
         const fileName = `chat_media/${Date.now()}_${file.name}`;
         const fileRef = storageRef.child(fileName);
 
+        // Subida con snapshot
         const snapshot = await fileRef.put(file);
         const downloadURL = await snapshot.ref.getDownloadURL();
 
@@ -102,7 +110,7 @@ async function enviarArchivoLocal(event) {
             timestamp: Date.now()
         });
 
-        // 2. Forzar el registro inmediato en la cola de notificaciones
+        // 2. Registrar en la cola de notificaciones
         const iconoUser = (typeof window.obtenerIconoUsuario === 'function') ? window.obtenerIconoUsuario(autor) : '👤';
         await firebase.database().ref('cola_notificaciones').push({
             title: `${iconoUser} ${autor} compartió contenido`,
@@ -110,12 +118,12 @@ async function enviarArchivoLocal(event) {
             timestamp: firebase.database.ServerValue.TIMESTAMP
         });
 
-        console.log("✅ Archivo enviado y notificación encolada correctamente.");
+        console.log("✅ Archivo enviado con éxito.");
     } catch (error) {
-        console.error("❌ Error crítico al subir archivo o notificar:", error);
-        alert("Error al enviar el archivo multimedia.");
+        console.error("❌ Error crítico al subir archivo:", error);
+        alert("Error al subir archivo: " + (error.message || error));
     } finally {
-        event.target.value = '';
+        event.target.value = ''; // Limpiar input
     }
 }
 
