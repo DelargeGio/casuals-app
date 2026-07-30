@@ -1,5 +1,5 @@
 // ======================================
-// MULTIMEDIA.JS - STORAGE OFICIAL CON MANEJO DE ERRORES
+// MULTIMEDIA.JS - ENVÍO DIRECTO A REALTIME DATABASE
 // ======================================
 
 function procesarContenidoMensaje(texto) {
@@ -62,86 +62,73 @@ function procesarContenidoMensaje(texto) {
 }
 
 // ======================================
-// ENVÍO DE ARCHIVOS A FIREBASE STORAGE
+// ENVÍO DE ARCHIVOS DIRECTO A REALTIME DB
 // ======================================
 
-async function enviarArchivoLocal(event) {
+function enviarArchivoLocal(event) {
     const file = event.target.files[0];
     if (!file) return;
 
     const autor = localStorage.getItem("casuals_user") || "Agente Anónimo";
-    console.log("📤 Subiendo archivo a Storage:", file.name);
+    console.log("📤 Procesando archivo para Realtime Database:", file.name);
 
-    // Notificación en pantalla de que empezó la subida
-    const toastId = "toast-subida-" + Date.now();
-    console.log("Subiendo archivo, por favor espera...");
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const MAX_SIZE = 1024; // Resolución excelente y nítida
+            let width = img.width;
+            let height = img.height;
 
-    try {
-        if (!firebase.storage) {
-            throw new Error("Firebase Storage no está inicializado.");
-        }
-
-        const storageRef = firebase.storage().ref();
-        const filePath = `chat_uploads/${Date.now()}_${file.name}`;
-        const fileRef = storageRef.child(filePath);
-
-        // Subida real con control de progreso
-        const uploadTask = fileRef.put(file);
-
-        uploadTask.on('state_changed', 
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                console.log(`Progreso de subida: ${progress.toFixed(0)}%`);
-            }, 
-            (error) => {
-                console.error("❌ Error en la subida de Storage:", error);
-                alert("Fallo al subir archivo: " + error.message);
-                event.target.value = '';
-            }, 
-            async () => {
-                // Subida completada con éxito, obtenemos URL pública
-                const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-                
-                let contenidoHtml = "";
-                let tipoMultimedia = "archivo";
-
-                if (file.type.startsWith('image/')) {
-                    contenidoHtml = `<div style="margin-bottom:4px;">📸 [Imagen]</div><a href="${downloadURL}" target="_blank"><img src="${downloadURL}" style="max-width:100%; max-height:250px; border-radius:8px; border:1px solid var(--neon-azul); object-fit:cover;"></a>`;
-                    tipoMultimedia = "foto";
-                } else if (file.type.startsWith('video/')) {
-                    contenidoHtml = `<video controls style="max-width:100%; max-height:250px; border-radius:8px; border:1px solid var(--oro);"><source src="${downloadURL}" type="${file.type}"></video>`;
-                    tipoMultimedia = "video";
-                } else {
-                    contenidoHtml = `<a href="${downloadURL}" target="_blank" style="color:var(--neon-azul); text-decoration:underline;">📁 Archivo: ${file.name}</a>`;
-                    tipoMultimedia = "archivo";
+            if (width > height) {
+                if (width > MAX_SIZE) {
+                    height *= MAX_SIZE / width;
+                    width = MAX_SIZE;
                 }
-
-                // Guardar mensaje en Realtime Database
-                await firebase.database().ref('mensajes').push({
-                    autor: autor,
-                    texto: contenidoHtml,
-                    tiempo: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    timestamp: Date.now()
-                });
-
-                // Registrar en cola de notificaciones
-                const iconoUser = (typeof window.obtenerIconoUsuario === 'function') ? window.obtenerIconoUsuario(autor) : '👤';
-                await firebase.database().ref('cola_notificaciones').push({
-                    title: `${iconoUser} ${autor} compartió contenido`,
-                    body: `Envió un nuevo ${tipoMultimedia} al chat.`,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-
-                console.log("✅ Archivo subido y mensaje publicado con éxito.");
-                event.target.value = '';
+            } else {
+                if (height > MAX_SIZE) {
+                    width *= MAX_SIZE / height;
+                    height = MAX_SIZE;
+                }
             }
-        );
 
-    } catch (error) {
-        console.error("❌ Error crítico en función de archivo:", error);
-        alert("Error: " + error.message);
-        event.target.value = '';
-    }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Calidad al 85% para conservar excelente definición de imagen
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+            const contenidoHtml = `<div style="margin-bottom:4px;">📸 [Imagen]</div><a href="${dataUrl}" target="_blank"><img src="${dataUrl}" style="max-width:100%; max-height:300px; border-radius:8px; border:1px solid var(--neon-azul); object-fit:cover;"></a>`;
+
+            // Publicar directamente en Realtime Database
+            firebase.database().ref('mensajes').push({
+                autor: autor,
+                texto: contenidoHtml,
+                tiempo: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                timestamp: Date.now()
+            }).then(() => {
+                console.log("✅ Imagen enviada al chat correctamente.");
+            }).catch(err => {
+                console.error("❌ Error al guardar en base de datos:", err);
+                alert("Error al enviar la imagen.");
+            });
+
+            // Registrar notificación
+            const iconoUser = (typeof window.obtenerIconoUsuario === 'function') ? window.obtenerIconoUsuario(autor) : '👤';
+            firebase.database().ref('cola_notificaciones').push({
+                title: `${iconoUser} ${autor} compartió contenido`,
+                body: `Envió una nueva foto al chat.`,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            event.target.value = '';
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
 }
 
 // Asignaciones globales
