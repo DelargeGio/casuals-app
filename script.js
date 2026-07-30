@@ -1,15 +1,30 @@
 // ======================================
-// SCRIPT.JS - ROUTER Y CONTROL DE VISTAS
+// SCRIPT.JS - INICIALIZACIÓN Y ROUTER
 // ======================================
 
+window.DOM = {
+    get feedContainer() { return document.getElementById('feed-container'); },
+    get mensajesContainer() { return document.getElementById('mensajes-container'); },
+    get feedPostsLista() { return document.getElementById('feed-posts-lista'); }
+};
+
+window.escaparHTML = function(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+};
+
 function renderView(view) {
-    const feedContainer = document.getElementById('feed-container');
-    const mensajesContainer = document.getElementById('mensajes-container');
+    const feedContainer = window.DOM.feedContainer;
+    const mensajesContainer = window.DOM.mensajesContainer;
 
     if (feedContainer) feedContainer.style.display = 'none';
     if (mensajesContainer) mensajesContainer.style.display = 'none';
 
-    // Actualizar botones de navegación inferior
     const btnFeed = document.getElementById('nav-feed');
     const btnChat = document.getElementById('nav-chat');
     
