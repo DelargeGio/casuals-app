@@ -121,8 +121,14 @@
     <script src="script.js?v=neon_definitivo_4"></script>
     <script src="sw.js"></script>
     
-    <!-- Consola Eruda -->
+    <!-- Consola Eruda Blindada -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
+    <script>
+        try {
+            eruda.init();
+        } catch (err) {
+            console.log("Eruda omitida en entorno local.");
+        }
+    </script>
 </body>
 </html>
