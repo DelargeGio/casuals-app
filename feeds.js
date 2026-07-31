@@ -1,5 +1,5 @@
 // ======================================
-// FEEDS.JS - CORREGIDO SIN DEPENDER DE INDEXON DE FIREBASE
+// FEEDS.JS - PROCESAMIENTO DIRECTO DE IMAGENES SIN BLOQUEOS
 // ======================================
 
 function renderFeed() {
@@ -58,14 +58,14 @@ function renderFeedContainer() {
                 <div style="display: flex; gap: 10px; align-items: flex-start;">
                     <div id="feed-user-avatar" style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-azul, #00f3ff), var(--oro, #ffd700)); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; font-size: 0.85rem; flex-shrink: 0;">U</div>
                     <div style="flex: 1;">
-                        <textarea id="feed-input-texto" placeholder="Sube tus fotos, evento o reporte..." rows="2" style="width: 100%; background: #181818; color: #fff; border: 1px solid #2a2a2a; padding: 8px 12px; border-radius: 10px; font-family: inherit; resize: none; outline: none; font-size: 0.85rem;"></textarea>
+                        <textarea id="feed-input-texto" placeholder="Sube tus fotos en carrusel, evento o reporte..." rows="2" style="width: 100%; background: #181818; color: #fff; border: 1px solid #2a2a2a; padding: 8px 12px; border-radius: 10px; font-family: inherit; resize: none; outline: none; font-size: 0.85rem;"></textarea>
                     </div>
                 </div>
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-left: 46px;">
                     <div style="display: flex; gap: 6px; align-items: center;">
                         <label style="cursor: pointer; background: #1a1a1a; border: 1px solid #333; padding: 5px 10px; border-radius: 20px; font-size: 0.72rem; color: var(--neon-azul); display: flex; align-items: center; gap: 5px;">
-                            📸 <span>Fotos</span> <input type="file" id="feed-file-input" accept="image/*" multiple style="display:none;" onchange="prepararImagenesFeed(event)">
+                            📸 <span id="feed-btn-text">Fotos (Carrusel)</span> <input type="file" id="feed-file-input" accept="image/*" multiple style="display:none;" onchange="prepararImagenesFeed(event)">
                         </label>
                         <span id="feed-file-status" style="font-size: 0.72rem; color: var(--oro);"></span>
                     </div>
@@ -106,46 +106,44 @@ function cambiarCategoriaFeed(categoria, btnElement) {
     escucharPublicacionesFeed();
 }
 
-async function prepararImagenesFeed(event) {
+function prepararImagenesFeed(event) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
     const statusLabel = document.getElementById('feed-file-status');
     const previewContainer = document.getElementById('feed-preview-container');
 
-    statusLabel.innerText = "Subiendo...";
     previewContainer.style.display = 'flex';
+    statusLabel.innerText = "Cargando...";
 
-    try {
-        const storageRef = firebase.storage().ref();
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            const fileName = `feed_media/${Date.now()}_${i}_${file.name}`;
-            const fileRef = storageRef.child(fileName);
-            const snapshot = await fileRef.put(file);
-            const downloadUrl = await snapshot.ref.getDownloadURL();
-            
-            imagenesFeedArrayTemporal.push(downloadUrl);
+    Array.from(files).forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64Data = e.target.result;
+            imagenesFeedArrayTemporal.push(base64Data);
 
             const thumbDiv = document.createElement('div');
             thumbDiv.style.cssText = "position: relative; flex-shrink: 0; width: 60px; height: 60px;";
-            thumbDiv.innerHTML = `<img src="${downloadUrl}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #333;">`;
+            thumbDiv.innerHTML = `<img src="${base64Data}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #333;">`;
             previewContainer.appendChild(thumbDiv);
-        }
-        statusLabel.innerText = `${imagenesFeedArrayTemporal.length} foto(s)`;
-    } catch (error) {
-        console.error("Error al subir:", error);
-        statusLabel.innerText = "Error";
-    }
+
+            statusLabel.innerText = `${imagenesFeedArrayTemporal.length} lista(s)`;
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
 function limpiarImagenesFeed() {
     imagenesFeedArrayTemporal = [];
-    document.getElementById('feed-file-input').value = "";
+    const fileInput = document.getElementById('feed-file-input');
+    if (fileInput) fileInput.value = "";
     const previewContainer = document.getElementById('feed-preview-container');
-    previewContainer.style.display = 'none';
-    previewContainer.innerHTML = "";
-    document.getElementById('feed-file-status').innerText = "";
+    if (previewContainer) {
+        previewContainer.style.display = 'none';
+        previewContainer.innerHTML = "";
+    }
+    const statusLabel = document.getElementById('feed-file-status');
+    if (statusLabel) statusLabel.innerText = "";
 }
 
 window.publicarEnFeed = async function() {
@@ -153,7 +151,7 @@ window.publicarEnFeed = async function() {
     const texto = textoInput ? textoInput.value.trim() : '';
 
     if (!texto && imagenesFeedArrayTemporal.length === 0) {
-        alert("Escribe algo o adjunta una foto.");
+        alert("Escribe algo o adjunta al menos una foto.");
         return;
     }
 
@@ -161,7 +159,7 @@ window.publicarEnFeed = async function() {
     const nuevoPost = {
         autor: autor,
         texto: texto,
-        fotos: imagenesFeedArrayTemporal,
+        fotos: [...imagenesFeedArrayTemporal],
         categoria: categoriaSeleccionadaFeed,
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
@@ -173,30 +171,30 @@ window.publicarEnFeed = async function() {
         console.log("¡Publicado con éxito!");
     } catch (err) {
         console.error("Error al publicar:", err);
-        alert("No se pudo enviar.");
+        alert("No se pudo enviar la publicación.");
     }
 };
 
 function generarHTMLCarrusel(fotos) {
     if (!fotos || fotos.length === 0) return '';
     if (fotos.length === 1) {
-        return `<div class="feed-carrusel-container"><div class="feed-carrusel-item"><img src="${window.escaparHTML(fotos[0])}" loading="lazy"></div></div>`;
+        return `<div style="margin-top: 8px; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid #222;"><img src="${window.escaparHTML(fotos[0])}" style="width: 100%; max-height: 350px; object-fit: cover; display: block;" loading="lazy"></div>`;
     }
 
     let itemsHTML = '';
     let dotsHTML = '';
     fotos.forEach((foto, index) => {
         const activeClass = index === 0 ? 'active' : '';
-        itemsHTML += `<div class="feed-carrusel-item"><img src="${window.escaparHTML(foto)}" loading="lazy"></div>`;
-        dotsHTML += `<span class="carrusel-dot ${activeClass}" data-index="${index}"></span>`;
+        itemsHTML += `<div style="min-width: 100%; height: 280px; flex-shrink: 0; scroll-snap-align: start;"><img src="${window.escaparHTML(foto)}" style="width: 100%; height: 100%; object-fit: cover; display: block;" loading="lazy"></div>`;
+        dotsHTML += `<span class="carrusel-dot ${activeClass}" style="width: 6px; height: 6px; border-radius: 50%; background: ${index === 0 ? 'var(--neon-azul, #00f3ff)' : '#555'}; transition: 0.2s;"></span>`;
     });
 
     return `
-        <div class="feed-carrusel-container">
-            <div class="feed-carrusel-track" onscroll="actualizarPuntosCarrusel(this)">
+        <div style="margin-top: 8px; position: relative; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid #222;">
+            <div style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch;" onscroll="actualizarPuntosCarrusel(this)">
                 ${itemsHTML}
             </div>
-            <div class="carrusel-dots">
+            <div style="position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 4px; pointer-events: none;">
                 ${dotsHTML}
             </div>
         </div>
@@ -205,10 +203,10 @@ function generarHTMLCarrusel(fotos) {
 
 window.actualizarPuntosCarrusel = function(track) {
     const index = Math.round(track.scrollLeft / track.clientWidth);
-    const container = track.closest('.feed-carrusel-container');
+    const container = track.closest('div[style*="position: relative"]');
     if (!container) return;
-    container.querySelectorAll('.carrusel-dot').forEach((dot, i) => {
-        dot.classList.toggle('active', i === index);
+    container.querySelectorAll('span[class*="carrusel-dot"]').forEach((dot, i) => {
+        dot.style.background = i === index ? 'var(--neon-azul, #00f3ff)' : '#555';
     });
 };
 
@@ -216,7 +214,6 @@ function escucharPublicacionesFeed() {
     const listaDiv = window.DOM.feedPostsLista;
     if (!listaDiv) return;
 
-    // Consulta limpia sin orderByChild para evitar el bloqueo por falta de índice
     window.db.ref('feed_posts').on('value', (snapshot) => {
         listaDiv.innerHTML = "";
         
@@ -233,7 +230,6 @@ function escucharPublicacionesFeed() {
             }
         });
 
-        // Ordenar en JS del más nuevo al más viejo usando timestamp
         posts.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
         if (posts.length === 0) {
