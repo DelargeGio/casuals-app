@@ -1,5 +1,5 @@
 // ======================================
-// FEEDS.JS - PROCESAMIENTO DIRECTO DE IMAGENES SIN BLOQUEOS
+// FEEDS.JS - SELECCION Y SUBIDA DIRECTA BLINDADA
 // ======================================
 
 function renderFeed() {
@@ -65,7 +65,7 @@ function renderFeedContainer() {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-left: 46px;">
                     <div style="display: flex; gap: 6px; align-items: center;">
                         <label style="cursor: pointer; background: #1a1a1a; border: 1px solid #333; padding: 5px 10px; border-radius: 20px; font-size: 0.72rem; color: var(--neon-azul); display: flex; align-items: center; gap: 5px;">
-                            📸 <span id="feed-btn-text">Fotos (Carrusel)</span> <input type="file" id="feed-file-input" accept="image/*" multiple style="display:none;" onchange="prepararImagenesFeed(event)">
+                            📸 <span>Fotos (Carrusel)</span> <input type="file" id="feed-file-input" accept="image/*" multiple style="display:none;" onchange="prepararImagenesFeed(event)">
                         </label>
                         <span id="feed-file-status" style="font-size: 0.72rem; color: var(--oro);"></span>
                     </div>
@@ -110,24 +110,24 @@ function prepararImagenesFeed(event) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    const statusLabel = document.getElementById('feed-file-status');
     const previewContainer = document.getElementById('feed-preview-container');
-
+    const statusLabel = document.getElementById('feed-file-status');
+    
     previewContainer.style.display = 'flex';
-    statusLabel.innerText = "Cargando...";
+    imagenesFeedArrayTemporal = [];
+    previewContainer.innerHTML = "";
 
-    Array.from(files).forEach((file) => {
+    Array.from(files).forEach((file, index) => {
         const reader = new FileReader();
         reader.onload = function(e) {
-            const base64Data = e.target.result;
-            imagenesFeedArrayTemporal.push(base64Data);
+            imagenesFeedArrayTemporal.push(e.target.result);
 
             const thumbDiv = document.createElement('div');
             thumbDiv.style.cssText = "position: relative; flex-shrink: 0; width: 60px; height: 60px;";
-            thumbDiv.innerHTML = `<img src="${base64Data}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #333;">`;
+            thumbDiv.innerHTML = `<img src="${e.target.result}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #333;">`;
             previewContainer.appendChild(thumbDiv);
 
-            statusLabel.innerText = `${imagenesFeedArrayTemporal.length} lista(s)`;
+            statusLabel.innerText = `${imagenesFeedArrayTemporal.length} foto(s)`;
         };
         reader.readAsDataURL(file);
     });
