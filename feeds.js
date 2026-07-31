@@ -1,5 +1,5 @@
 // ======================================
-// FEEDS.JS - RED SOCIAL / ESTILO INSTAGRAM-TELEGRAM (BLINDADO)
+// FEEDS.JS - RED SOCIAL / ESTILO INSTAGRAM-TELEGRAM (CARRUSEL MÚLTIPLE)
 // ======================================
 
 function renderFeed() {
@@ -11,6 +11,7 @@ function cargarFeed() {
 }
 
 let categoriaSeleccionadaFeed = 'general';
+let imagenesFeedArrayTemporal = []; // Soporte para múltiples fotos (carrusel)
 
 function renderFeedContainer() {
     const feedContainer = window.DOM.feedContainer;
@@ -47,9 +48,9 @@ function renderFeedContainer() {
                 <span style="font-size: 0.65rem; color: #777; background: #161616; padding: 3px 8px; border-radius: 20px; border: 1px solid #282828;">LIVE_FEED</span>
             </div>
 
-            <!-- Pestañas de Secciones (Trapos, Afanes, Arte, Música, General) -->
+            <!-- Pestañas de Secciones -->
             <div style="display: flex; gap: 6px; padding: 8px 12px; background: #0f0f0f; border-bottom: 1px solid #1f1f1f; overflow-x: auto; flex-shrink: 0; -webkit-overflow-scrolling: touch;">
-                <button onclick="cambiarCategoriaFeed('general', this)" class="feed-cat-btn active-cat" style="background: #222; border: 1px solid var(--neon-azul); color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 0.72rem; cursor: pointer; white-space: nowrap;">🌐 Todo</button>
+                <button onclick="cambiarCategoriaFeed('general', this)" class="feed-cat-btn" style="background: #222; border: 1px solid var(--neon-azul); color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 0.72rem; cursor: pointer; white-space: nowrap;">🌐 Todo</button>
                 <button onclick="cambiarCategoriaFeed('trapos', this)" class="feed-cat-btn" style="background: #141414; border: 1px solid #333; color: #aaa; padding: 4px 10px; border-radius: 12px; font-size: 0.72rem; cursor: pointer; white-space: nowrap;">🏴‍☠️ Trapos & Banderas</button>
                 <button onclick="cambiarCategoriaFeed('afanes', this)" class="feed-cat-btn" style="background: #141414; border: 1px solid #333; color: #aaa; padding: 4px 10px; border-radius: 12px; font-size: 0.72rem; cursor: pointer; white-space: nowrap;">🔥 Afanes</button>
                 <button onclick="cambiarCategoriaFeed('arte_musica', this)" class="feed-cat-btn" style="background: #141414; border: 1px solid #333; color: #aaa; padding: 4px 10px; border-radius: 12px; font-size: 0.72rem; cursor: pointer; white-space: nowrap;">🎨 Arte & Música</button>
@@ -60,14 +61,14 @@ function renderFeedContainer() {
                 <div style="display: flex; gap: 10px; align-items: flex-start;">
                     <div id="feed-user-avatar" style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-azul, #00f3ff), var(--oro, #ffd700)); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; font-size: 0.85rem; flex-shrink: 0;">U</div>
                     <div style="flex: 1;">
-                        <textarea id="feed-input-texto" placeholder="Sube una foto, evento, trapo o publicación..." rows="2" style="width: 100%; background: #181818; color: #fff; border: 1px solid #2a2a2a; padding: 8px 12px; border-radius: 10px; font-family: inherit; resize: none; outline: none; font-size: 0.85rem; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--neon-azul)'" onblur="this.style.borderColor='#2a2a2a'"></textarea>
+                        <textarea id="feed-input-texto" placeholder="Sube tus fotos en carrusel, evento o reporte..." rows="2" style="width: 100%; background: #181818; color: #fff; border: 1px solid #2a2a2a; padding: 8px 12px; border-radius: 10px; font-family: inherit; resize: none; outline: none; font-size: 0.85rem; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--neon-azul)'" onblur="this.style.borderColor='#2a2a2a'"></textarea>
                     </div>
                 </div>
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-left: 46px;">
                     <div style="display: flex; gap: 6px; align-items: center;">
                         <label style="cursor: pointer; background: #1a1a1a; border: 1px solid #333; padding: 5px 10px; border-radius: 20px; font-size: 0.72rem; color: var(--neon-azul); display: flex; align-items: center; gap: 5px;">
-                            📸 <span>Multimedia</span> <input type="file" id="feed-file-input" accept="image/*,video/*" style="display:none;" onchange="prepararImagenFeed(event)">
+                            📸 <span>Fotos (Carrusel)</span> <input type="file" id="feed-file-input" accept="image/*" multiple style="display:none;" onchange="prepararImagenesFeed(event)">
                         </label>
                         <span id="feed-file-status" style="font-size: 0.72rem; color: var(--oro); max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
                     </div>
@@ -77,10 +78,8 @@ function renderFeedContainer() {
                     </button>
                 </div>
 
-                <div id="feed-preview-container" style="margin-top: 8px; margin-left: 46px; display: none; position: relative; max-width: 130px;">
-                    <img id="feed-img-preview" src="" style="width: 100%; max-height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #333;">
-                    <button onclick="limpiarImagenFeed()" style="background: rgba(0,0,0,0.8); color: #ff5555; border: 1px solid #ff5555; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; position: absolute; top: -5px; right: -5px; display: flex; align-items: center; justify-content: center;">✕</button>
-                </div>
+                <!-- Miniaturas de previsualización para el carrusel -->
+                <div id="feed-preview-container" style="margin-top: 8px; margin-left: 46px; display: none; gap: 6px; overflow-x: auto; padding-bottom: 4px;"></div>
             </div>
 
             <!-- Lista de Feed con Scroll Propio -->
@@ -103,7 +102,6 @@ function renderFeedContainer() {
 function cambiarCategoriaFeed(categoria, btnElement) {
     categoriaSeleccionadaFeed = categoria;
     
-    // Actualizar estilos de los botones de categoría
     document.querySelectorAll('.feed-cat-btn').forEach(btn => {
         btn.style.background = '#141414';
         btn.style.borderColor = '#333';
@@ -116,40 +114,52 @@ function cambiarCategoriaFeed(categoria, btnElement) {
     escucharPublicacionesFeed();
 }
 
-let imagenFeedUrlTemporal = "";
-
-async function prepararImagenFeed(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+async function prepararImagenesFeed(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
     const statusLabel = document.getElementById('feed-file-status');
     const previewContainer = document.getElementById('feed-preview-container');
-    const previewImg = document.getElementById('feed-img-preview');
 
     statusLabel.innerText = "Subiendo...";
+    previewContainer.style.display = 'flex';
 
     try {
         const storageRef = firebase.storage().ref();
-        const fileName = `feed_media/${Date.now()}_${file.name}`;
-        const fileRef = storageRef.child(fileName);
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const fileName = `feed_media/${Date.now()}_${i}_${file.name}`;
+            const fileRef = storageRef.child(fileName);
 
-        const snapshot = await fileRef.put(file);
-        imagenFeedUrlTemporal = await snapshot.ref.getDownloadURL();
+            const snapshot = await fileRef.put(file);
+            const downloadUrl = await snapshot.ref.getDownloadURL();
+            
+            imagenesFeedArrayTemporal.push(downloadUrl);
 
-        previewImg.src = imagenFeedUrlTemporal;
-        previewContainer.style.display = 'block';
-        statusLabel.innerText = "¡Listo!";
+            // Pintar miniatura en el panel de creación
+            const thumbDiv = document.createElement('div');
+            thumbDiv.style.cssText = "position: relative; flex-shrink: 0; width: 60px; height: 60px;";
+            thumbDiv.innerHTML = `
+                <img src="${downloadUrl}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #333;">
+            `;
+            previewContainer.appendChild(thumbDiv);
+        }
+
+        statusLabel.innerText = `${imagenesFeedArrayTemporal.length} foto(s)`;
     } catch (error) {
-        console.error("Error al subir archivo al feed:", error);
-        alert("Error al subir el archivo.");
+        console.error("Error al subir archivos al feed:", error);
+        alert("Error al subir las imágenes.");
         statusLabel.innerText = "Error";
     }
 }
 
-function limpiarImagenFeed() {
-    imagenFeedUrlTemporal = "";
+function limpiarImagenesFeed() {
+    imagenesFeedArrayTemporal = [];
     document.getElementById('feed-file-input').value = "";
-    document.getElementById('feed-preview-container').style.display = 'none';
+    const previewContainer = document.getElementById('feed-preview-container');
+    previewContainer.style.display = 'none';
+    previewContainer.innerHTML = "";
     document.getElementById('feed-file-status').innerText = "";
 }
 
@@ -157,8 +167,8 @@ function publicarEnFeed() {
     const textoInput = document.getElementById('feed-input-texto');
     const texto = textoInput.value.trim();
 
-    if (!texto && !imagenFeedUrlTemporal) {
-        alert("Escribe algo o adjunta una imagen/video.");
+    if (!texto && imagenesFeedArrayTemporal.length === 0) {
+        alert("Escribe algo o adjunta al menos una foto.");
         return;
     }
 
@@ -167,7 +177,7 @@ function publicarEnFeed() {
     const nuevoPost = {
         autor: autor,
         texto: texto,
-        imagen: imagenFeedUrlTemporal || "",
+        fotos: imagenesFeedArrayTemporal || [], // Array de imágenes para el carrusel
         categoria: categoriaSeleccionadaFeed,
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
@@ -175,13 +185,66 @@ function publicarEnFeed() {
     const dbRef = window.db.ref('feed_posts').push();
     dbRef.set(nuevoPost).then(() => {
         textoInput.value = "";
-        limpiarImagenFeed();
-        console.log("Post publicado en categoría:", categoriaSeleccionadaFeed);
+        limpiarImagenesFeed();
+        console.log("Post con carrusel publicado exitosamente.");
     }).catch((err) => {
         console.error("Error al publicar:", err);
         alert("No se pudo enviar la publicación.");
     });
 }
+
+function generarHTMLCarrusel(fotos) {
+    if (!fotos || fotos.length === 0) return '';
+    
+    // Si solo es una foto, se muestra limpia sin controles de carrusel
+    if (fotos.length === 1) {
+        return `
+            <div class="feed-carrusel-container">
+                <div class="feed-carrusel-item">
+                    <img src="${window.escaparHTML(fotos[0])}" alt="Foto post" loading="lazy">
+                </div>
+            </div>
+        `;
+    }
+
+    let itemsHTML = '';
+    let dotsHTML = '';
+
+    fotos.forEach((foto, index) => {
+        const activeClass = index === 0 ? 'active' : '';
+        itemsHTML += `
+            <div class="feed-carrusel-item">
+                <img src="${window.escaparHTML(foto)}" alt="Foto ${index + 1}" loading="lazy">
+            </div>
+        `;
+        dotsHTML += `<span class="carrusel-dot ${activeClass}" data-index="${index}"></span>`;
+    });
+
+    return `
+        <div class="feed-carrusel-container">
+            <div class="feed-carrusel-track" onscroll="actualizarPuntosCarrusel(this)">
+                ${itemsHTML}
+            </div>
+            <div class="carrusel-dots">
+                ${dotsHTML}
+            </div>
+        </div>
+    `;
+}
+
+window.actualizarPuntosCarrusel = function(track) {
+    const index = Math.round(track.scrollLeft / track.clientWidth);
+    const container = track.closest('.feed-carrusel-container');
+    if (!container) return;
+    const dots = container.querySelectorAll('.carrusel-dot');
+    dots.forEach((dot, i) => {
+        if (i === index) {
+            dot.classList.add('active');
+        } else {
+            dot.classList.remove('active');
+        }
+    });
+};
 
 function escucharPublicacionesFeed() {
     const listaDiv = window.DOM.feedPostsLista;
@@ -204,7 +267,6 @@ function escucharPublicacionesFeed() {
         let posts = [];
         snapshot.forEach((childSnapshot) => {
             let p = { id: childSnapshot.key, ...childSnapshot.val() };
-            // Filtrar por categoría si no es general
             if (categoriaSeleccionadaFeed === 'general' || p.categoria === categoriaSeleccionadaFeed || (!p.categoria && categoriaSeleccionadaFeed === 'general')) {
                 posts.push(p);
             }
@@ -226,11 +288,15 @@ function escucharPublicacionesFeed() {
             const inicialAutor = post.autor ? post.autor.charAt(0).toUpperCase() : 'A';
             const badgeCat = post.categoria && post.categoria !== 'general' ? `<span style="font-size: 0.60rem; background: #1a1a1a; color: var(--oro); padding: 2px 6px; border-radius: 6px; border: 1px solid #333;">#${post.categoria}</span>` : '';
             
-            let multimediaHtml = post.imagen ? `
-                <div style="margin-top: 8px; border-radius: 10px; overflow: hidden; background: #000; border: 1px solid #222;">
-                    <img src="${post.imagen}" style="width: 100%; max-height: 300px; object-fit: cover; display: block;" loading="lazy">
-                </div>
-            ` : '';
+            // Compatibilidad hacia atrás si el post antiguo usa 'imagen' única o 'fotos' en array
+            let listaFotos = [];
+            if (post.fotos && Array.isArray(post.fotos)) {
+                listaFotos = post.fotos;
+            } else if (post.imagen) {
+                listaFotos = [post.imagen];
+            }
+
+            let multimediaHtml = generarHTMLCarrusel(listaFotos);
 
             let card = document.createElement('div');
             card.style.cssText = "background: #141414; border: 1px solid #222; border-radius: 12px; padding: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.3);";

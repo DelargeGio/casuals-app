@@ -388,3 +388,70 @@ body {
     animation: bengalaTemblor 0.4s ease-in-out infinite;
     border: 2px solid var(--neon-naranja) !important;
 }
+/* ====================================== */
+/* ESTILOS CARRUSEL PUNK / INSTA-TELEGRAM  */
+/* ====================================== */
+
+.feed-carrusel-container {
+    position: relative;
+    width: 100%;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 8px;
+    border: 1px solid #222;
+}
+
+.feed-carrusel-track {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    scrollbar-width: none; /* Firefox */
+}
+
+.feed-carrusel-track::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+.feed-carrusel-item {
+    min-width: 100%;
+    box-sizing: border-box;
+    scroll-snap-align: start;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #0b0b0b;
+}
+
+.feed-carrusel-item img {
+    width: 100%;
+    max-height: 350px;
+    object-fit: cover;
+    display: block;
+}
+
+/* Indicadores de puntos (Dots) estilo Telegram/IG */
+.carrusel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+}
+
+.carrusel-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    transition: background 0.3s ease;
+}
+
+.carrusel-dot.active {
+    background: var(--neon-azul, #00f3ff);
+    transform: scale(1.2);
+}
