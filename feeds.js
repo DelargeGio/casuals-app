@@ -287,3 +287,20 @@ function formatearTiempoRelativo(timestamp) {
 window.renderFeed = renderFeed;
 window.renderFeedContainer = renderFeedContainer;
 window.cargarFeed = cargarFeed;
+
+// Parche de seguridad para forzar la limpieza del feed si Firebase tarda o falla
+window.escucharPublicacionesFeedOriginal = window.escucharPublicacionesFeedOriginal || window.escucharPublicacionesFeed;
+
+window.escucharPublicacionesFeed = function() {
+    try {
+        if (typeof escucharPublicacionesFeedOriginal === 'function') {
+            escucharPublicacionesFeedOriginal();
+        }
+    } catch (e) {
+        console.error("Error en feed:", e);
+        const lista = document.getElementById('feed-posts-lista');
+        if (lista) {
+            lista.innerHTML = '<div style="text-align:center; color:#ff4444; padding:20px; font-size:0.82rem;">Error al cargar el muro. Revisa tu conexion.</div>';
+        }
+    }
+};
