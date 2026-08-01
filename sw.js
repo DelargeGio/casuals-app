@@ -15,3 +15,11 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+// Limpieza básica del Service Worker para evitar ReferenceError en caché
+self.addEventListener('install', (event) => {
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(clients.claim());
+});
