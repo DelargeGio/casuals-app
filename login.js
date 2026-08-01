@@ -10,3 +10,32 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     console.log("🔓 Acceso libre directo al feed y contenido.");
 });
+let pinActual = "";
+
+function anadirDigito(digito) {
+    if (pinActual.length < 4) {
+        pinActual += digito;
+        actualizarPuntosPin();
+    }
+}
+
+function limpiarPin() {
+    pinActual = "";
+    actualizarPuntosPin();
+}
+
+function actualizarPuntosPin() {
+    const dots = document.querySelectorAll('.pin-dot');
+    dots.forEach((dot, index) => {
+        if (index < pinActual.length) {
+            dot.classList.add('activo');
+        } else {
+            dot.classList.remove('activo');
+        }
+    });
+    
+    if (pinActual.length === 4) {
+        // Aquí validas tu PIN o la lógica que tenías para entrar al feed
+        verificarAccesoPin(pinActual);
+    }
+}
