@@ -1,27 +1,102 @@
-// Bypass automático y seguro al feed de trapos y música
+// ==========================================
+// CASUALS - Lógica de Login Oficial (Con botón OK obligatorio)
+// ==========================================
+
+let pinIngresado = "";
+
+// Diccionario oficial de accesos de 4 dígitos
+const ACCESOS_VALIDOS = {
+    "1111": "Apple 🍎",
+    "2222": "Calavera ☠️",
+    "3333": "Pelu 🧸",
+    "4444": "Manu 🇦🇷",
+    "5555": "GioDelarge 🤹🏽"
+};
+
 document.addEventListener("DOMContentLoaded", () => {
-    const loginContainer = document.getElementById("login-container") || document.querySelector(".login-view") || document.querySelector(".login-body");
-    if (loginContainer) {
-        loginContainer.style.display = "none";
+    // Verificar si ya hay una sesión activa guardada
+    const sesionActiva = localStorage.getItem("sesion_activa");
+    const loginScreen = document.getElementById("login-screen");
+    const appScreen = document.getElementById("app-screen");
+
+    if (sesionActiva === "true") {
+        if (loginScreen) loginScreen.style.display = "none";
+        if (appScreen) appScreen.style.display = "flex";
+        console.log("🔓 Sesión restaurada automáticamente.");
+    } else {
+        if (loginScreen) loginScreen.style.display = "flex";
+        if (appScreen) appScreen.style.display = "none";
     }
-    
-    const appScreen = document.getElementById("app-screen") || document.getElementById("app") || document.querySelector("main");
-    if (appScreen) {
-        appScreen.style.display = "flex";
-    }
-    
-    console.log("🔓 Acceso directo y libre al feed de trapos y música.");
 });
 
-// Exponer la función cerrarSesion globalmente para que el onclick del HTML la encuentre sin fallas
+// Función para manejar los botones del teclado numérico ("0"-"9", "C")
+window.anadirDigito = function(valor) {
+    const errorBox = document.getElementById("error-pin-box");
+    if (errorBox) errorBox.style.display = "none";
+
+    if (valor === "C") {
+        window.limpiarPin();
+        return;
+    }
+
+    if (pinIngresado.length < 4) {
+        pinIngresado += String(valor);
+        actualizarVisualizadorPin();
+    }
+    // NOTA: Ya quitamos la validacion automatica de 4 digitos. Ahora obliga a presionar OK.
+};
+
+window.limpiarPin = function() {
+    pinIngresado = "";
+    actualizarVisualizadorPin();
+    const errorBox = document.getElementById("error-pin-box");
+    if (errorBox) errorBox.style.display = "none";
+};
+
+function actualizarVisualizadorPin() {
+    const puntos = document.querySelectorAll("#pin-display .pin-dot");
+    puntos.forEach((punto, index) => {
+        if (index < pinIngresado.length) {
+            punto.classList.add("activo");
+            punto.style.background = "var(--neon-azul, #0ff)";
+        } else {
+            punto.classList.remove("activo");
+            punto.style.background = "";
+        }
+    });
+}
+
+// Validación manual obligatoria al presionar el botón OK
+window.verificarPinManual = function() {
+    const errorBox = document.getElementById("error-pin-box");
+
+    if (ACCESOS_VALIDOS[pinIngresado]) {
+        const usuarioActivo = ACCESOS_VALIDOS[pinIngresado];
+        
+        const loginScreen = document.getElementById("login-screen");
+        const appScreen = document.getElementById("app-screen");
+
+        if (loginScreen) loginScreen.style.display = "none";
+        if (appScreen) appScreen.style.display = "flex";
+
+        localStorage.setItem("sesion_activa", "true");
+        localStorage.setItem("usuario_nombre", usuarioActivo);
+        console.log(`🔓 Acceso concedido para: ${usuarioActivo}`);
+        
+        if (typeof renderView === "function") {
+            renderView("feed");
+        }
+    } else {
+        if (errorBox) {
+            errorBox.style.display = "block";
+        }
+        window.limpiarPin();
+    }
+};
+
+// Función para cerrar sesión y regresar al login
 window.cerrarSesion = function() {
     localStorage.clear();
     sessionStorage.clear();
-    window.location.href = window.location.pathname; // Recarga limpia de la app
+    window.location.reload();
 };
-
-// Funciones de respaldo auxiliares para evitar errores de consola
-window.verificarAccesoPin = function() { return true; };
-window.verificarPinManual = function() { return true; };
-window.anadirDigito = function() {};
-window.limpiarPin = function() {};
