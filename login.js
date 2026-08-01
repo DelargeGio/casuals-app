@@ -39,3 +39,23 @@ function actualizarPuntosPin() {
         verificarAccesoPin(pinActual);
     }
 }
+// Bypass automático y limpio para entrar directo al feed de trapos y música
+document.addEventListener("DOMContentLoaded", () => {
+    const loginContainer = document.getElementById("login-container") || document.querySelector(".login-view") || document.querySelector(".login-body");
+    if (loginContainer) {
+        loginContainer.style.display = "none";
+    }
+    
+    const appScreen = document.getElementById("app-screen") || document.getElementById("app") || document.querySelector("main");
+    if (appScreen) {
+        appScreen.style.display = "flex";
+    }
+    
+    console.log("🔓 Acceso directo y libre al feed de trapos y música.");
+});
+
+// Funciones de respaldo para evitar ReferenceError en la consola
+function verificarAccesoPin(pin) { return true; }
+function verificarPinManual() { return true; }
+function anadirDigito(digito) {}
+function limpiarPin() {}
