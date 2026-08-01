@@ -59,3 +59,18 @@ function verificarAccesoPin(pin) { return true; }
 function verificarPinManual() { return true; }
 function anadirDigito(digito) {}
 function limpiarPin() {}
+// Forzar enlace del botón de salir de manera dinámica
+document.addEventListener("DOMContentLoaded", () => {
+    const btnSalir = document.getElementById("btn-salir") || document.querySelector(".btn-salir") || document.querySelector("[onclick*='cerrarSesion']") || document.getElementById("salir");
+    if (btnSalir) {
+        btnSalir.addEventListener("click", (e) => {
+            e.preventDefault();
+            cerrarSesion();
+        });
+    }
+});
+
+function cerrarSesion() {
+    localStorage.clear();
+    location.reload();
+}
