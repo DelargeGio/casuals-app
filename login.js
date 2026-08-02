@@ -1,5 +1,5 @@
 // ==========================================
-// CASUALS - Lógica de Login Oficial (Con botón OK obligatorio)
+// CASUALS - Lógica de Login Oficial (Con Presencia y Chat Automáticos)
 // ==========================================
 
 let pinIngresado = "";
@@ -23,6 +23,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (loginScreen) loginScreen.style.display = "none";
         if (appScreen) appScreen.style.display = "flex";
         console.log("🔓 Sesión restaurada automáticamente.");
+
+        // Disparar funciones de red al restaurar sesión
+        if (typeof iniciarPresencia === "function") iniciarPresencia();
+        if (typeof cargarMensajes === "function") cargarMensajes();
+        if (typeof renderView === "function") renderView("feed");
     } else {
         if (loginScreen) loginScreen.style.display = "flex";
         if (appScreen) appScreen.style.display = "none";
@@ -43,7 +48,6 @@ window.anadirDigito = function(valor) {
         pinIngresado += String(valor);
         actualizarVisualizadorPin();
     }
-    // NOTA: Ya quitamos la validacion automatica de 4 digitos. Ahora obliga a presionar OK.
 };
 
 window.limpiarPin = function() {
@@ -83,6 +87,13 @@ window.verificarPinManual = function() {
         localStorage.setItem("usuario_nombre", usuarioActivo);
         console.log(`🔓 Acceso concedido para: ${usuarioActivo}`);
         
+        // 🟢 Activar presencia y cargar mensajes de inmediato al entrar
+        if (typeof iniciarPresencia === "function") {
+            iniciarPresencia();
+        }
+        if (typeof cargarMensajes === "function") {
+            cargarMensajes();
+        }
         if (typeof renderView === "function") {
             renderView("feed");
         }
