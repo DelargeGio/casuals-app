@@ -1,11 +1,11 @@
 // ==========================================
-// CHAT.JS - MOTOR BLINDADO CON DETECCIÓN DE FOCO (v3.6)
+// CHAT.JS - MOTOR BLINDADO CON MICRO-COMPRESIÓN (v3.8)
 // ==========================================
 
 let multimediaChatTemporal = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 CHAT.JS CARGADO CORRECTAMENTE");
+    console.log("🚀 CHAT.JS CARGADO CORRECTAMENTE (MODO MICRO-COMPRESIÓN)");
     configurarInputsChatGlobales();
 });
 
@@ -28,14 +28,11 @@ function configurarInputsChatGlobales() {
         }, true);
     }
 
-    // ⭐ PARCHE CLAVE PARA ANDROID: Detecta cuando regresas de la cámara nativa
     window.addEventListener('focus', () => {
         if (!multimediaChatTemporal) {
             if (inputCam && inputCam.files && inputCam.files[0]) {
-                console.log("🔄 Capturado archivo de cámara por retorno de enfoque");
                 prepararArchivoChat({ target: inputCam });
             } else if (inputGaleria && inputGaleria.files && inputGaleria.files[0]) {
-                console.log("🔄 Capturado archivo de galería por retorno de enfoque");
                 prepararArchivoChat({ target: inputGaleria });
             }
         }
@@ -87,12 +84,7 @@ window.inicializarChat = function() {
         Object.keys(data).forEach(key => {
             const msg = data[key];
             const autor = escaparHTML(msg.autor || 'Anónimo');
-            
-            let textoCrudo = msg.texto || '';
-            if (textoCrudo.includes('data:image') || textoCrudo.includes('<div') || textoCrudo.includes('base64')) {
-                textoCrudo = ''; 
-            }
-            const texto = escaparHTML(textoCrudo);
+            const texto = escaparHTML(msg.texto || '');
 
             const esMio = (msg.autor === usuarioActual);
             const claseAlineacion = esMio ? 'derecha' : 'izquierda';
@@ -100,19 +92,11 @@ window.inicializarChat = function() {
 
             let multimediaHTML = '';
             if (msg.multimedia) {
-                if (msg.multimedia.startsWith('data:image') || msg.multimedia.startsWith('http')) {
-                    multimediaHTML = `
-                        <div class="multimedia-box">
-                            <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Media tribuna">
-                        </div>
-                    `;
-                } else if (msg.multimedia.startsWith('data:video')) {
-                    multimediaHTML = `
-                        <div class="multimedia-box">
-                            <video src="${msg.multimedia}" controls playsinline preload="metadata" style="width:100%; max-height:250px; border-radius:4px;"></video>
-                        </div>
-                    `;
-                }
+                multimediaHTML = `
+                    <div class="multimedia-box">
+                        <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Media tribuna" loading="lazy">
+                    </div>
+                `;
             } else if (texto.includes('youtube.com') || texto.includes('youtu.be')) {
                 const embedUrl = convertirAEmbedYouTube(texto);
                 if (embedUrl) {
@@ -150,91 +134,59 @@ window.inicializarChat = function() {
 
 function prepararArchivoChat(event) {
     const file = event.target.files ? event.target.files[0] : null;
-    if (!file) {
-        console.log("⚠️ No se seleccionó ningún archivo.");
-        return;
-    }
+    if (!file) return;
 
-    console.log("📂 Archivo detectado:", file.name, "Tamaño:", (file.size / 1024).toFixed(2), "KB");
+    console.log("📂 Comprimiendo imagen localmente a ultra-bajo peso...");
     const inputTexto = document.getElementById('chat-in');
 
     const reader = new FileReader();
     reader.onload = (e) => {
         const rawBase64 = e.target.result;
+        const img = new Image();
 
-        if (file.type.startsWith('image/')) {
-            const img = new Image();
-            let finished = false;
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 500; // Máximo 500px de ancho para garantizar peso mínimo
+                let width = img.width;
+                let height = img.height;
 
-            const safetyTimeout = setTimeout(() => {
-                if (!finished) {
-                    finished = true;
-                    multimediaChatTemporal = rawBase64;
-                    if (inputTexto) {
-                        inputTexto.placeholder = "[📷 Foto lista para enviar]";
-                        inputTexto.focus();
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_WIDTH) {
+                        width *= MAX_WIDTH / height;
+                        height = MAX_WIDTH;
                     }
                 }
-            }, 3000);
 
-            img.onload = () => {
-                if (finished) return;
-                finished = true;
-                clearTimeout(safetyTimeout);
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
 
-                try {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800;
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                    } else {
-                        if (height > MAX_WIDTH) {
-                            width *= MAX_WIDTH / height;
-                            height = MAX_WIDTH;
-                        }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    multimediaChatTemporal = canvas.toDataURL('image/jpeg', 0.70);
-                } catch (err) {
-                    multimediaChatTemporal = rawBase64;
-                }
+                // Calidad 0.60 comprimido en JPEG (pesará aprox 15-25 KB)
+                multimediaChatTemporal = canvas.toDataURL('image/jpeg', 0.60);
+                console.log("✅ Imagen comprimida con éxito. Lista para enviar.");
 
                 if (inputTexto) {
                     inputTexto.placeholder = "[📷 Foto lista para enviar]";
                     inputTexto.focus();
                 }
-            };
-
-            img.onerror = () => {
-                if (finished) return;
-                finished = true;
-                clearTimeout(safetyTimeout);
+            } catch (err) {
+                console.error("Error al comprimir:", err);
                 multimediaChatTemporal = rawBase64;
-                if (inputTexto) {
-                    inputTexto.placeholder = "[📷 Foto lista para enviar]";
-                    inputTexto.focus();
-                }
-            };
-
-            img.src = rawBase64;
-        } else {
-            multimediaChatTemporal = rawBase64;
-            if (inputTexto) {
-                inputTexto.placeholder = "[📁 Archivo listo para enviar]";
-                inputTexto.focus();
             }
-        }
+        };
+
+        img.onerror = () => {
+            multimediaChatTemporal = rawBase64;
+        };
+
+        img.src = rawBase64;
     };
 
     reader.readAsDataURL(file);
@@ -250,7 +202,7 @@ window.enviarMensajeChat = function() {
     const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
     const nuevoMensaje = {
         autor: autor,
-        texto: texto,
+        texto: texto.startsWith('[') ? '' : texto,
         multimedia: multimediaChatTemporal || '',
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
@@ -273,7 +225,7 @@ window.enviarMensajeChat = function() {
         })
         .catch(err => {
             console.error("Error al enviar:", err);
-            alert("No se pudo enviar el archivo.");
+            alert("No se pudo enviar el mensaje.");
         })
         .finally(() => {
             if (btnEnviar) btnEnviar.disabled = false;
