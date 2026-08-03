@@ -1,5 +1,5 @@
 // ==========================================
-// CHAT.JS - VERSIÓN DEFINITIVA Y PULIDA (v3.5)
+// CHAT.JS - MOTOR BLINDADO CON DETECCIÓN DE FOCO (v3.6)
 // ==========================================
 
 let multimediaChatTemporal = null;
@@ -27,6 +27,19 @@ function configurarInputsChatGlobales() {
             prepararArchivoChat(e);
         }, true);
     }
+
+    // ⭐ PARCHE CLAVE PARA ANDROID: Detecta cuando regresas de la cámara nativa
+    window.addEventListener('focus', () => {
+        if (!multimediaChatTemporal) {
+            if (inputCam && inputCam.files && inputCam.files[0]) {
+                console.log("🔄 Capturado archivo de cámara por retorno de enfoque");
+                prepararArchivoChat({ target: inputCam });
+            } else if (inputGaleria && inputGaleria.files && inputGaleria.files[0]) {
+                console.log("🔄 Capturado archivo de galería por retorno de enfoque");
+                prepararArchivoChat({ target: inputGaleria });
+            }
+        }
+    });
 
     const btnEnviar = document.getElementById('btn-enviar-msg');
     if (btnEnviar && !btnEnviar.dataset.listenerConfigured) {
@@ -136,7 +149,7 @@ window.inicializarChat = function() {
 };
 
 function prepararArchivoChat(event) {
-    const file = event.target.files[0];
+    const file = event.target.files ? event.target.files[0] : null;
     if (!file) {
         console.log("⚠️ No se seleccionó ningún archivo.");
         return;
