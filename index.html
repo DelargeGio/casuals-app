@@ -36,7 +36,7 @@
         }
     </script>
     
-    <link rel="stylesheet" href="style.css?v=neon_definitivo_13">
+    <link rel="stylesheet" href="style.css?v=neon_definitivo_14">
 </head>
 <body class="vista-feed">
 
@@ -111,18 +111,20 @@
         try { eruda.init(); } catch (err) {}
     </script>
 
-    <script src="login.js?v=13"></script>
-    <script src="multimedia.js?v=13"></script>
-    <script src="feeds.js?v=13"></script>
-    <script src="panic.js?v=13"></script>
-    <script src="push-notifications.js?v=13"></script>
-    <script src="script.js?v=13"></script>
-    <script src="chat.js?v=13"></script>
+    <script src="login.js?v=14"></script>
+    <script src="multimedia.js?v=14"></script>
+    <script src="feeds.js?v=14"></script>
+    <script src="panic.js?v=14"></script>
+    <script src="push-notifications.js?v=14"></script>
+    <script src="script.js?v=14"></script>
+    <script src="chat.js?v=14"></script>
 
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(() => {});
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    reg.update(); // Forzar actualización del SW
+                }).catch(() => {});
             });
         }
     </script>

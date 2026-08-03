@@ -1,9 +1,9 @@
 // ==========================================
-// CHAT.JS - RENDERIZADO VISIBLE DE IMÁGENES (v4.8)
+// CHAT.JS - RENDERIZADO FORZADO CON LOGS (v4.9)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 CHAT.JS CARGADO (MODO VISUALIZACIÓN FORZADA)");
+    console.log("🚀 CHAT.JS CARGADO (VERSIÓN 14)");
     configurarInputsChatGlobales();
 });
 
@@ -84,11 +84,10 @@ function procesarArchivoDirecto(event) {
                 firebase.database().ref('mensajes').push(nuevoMensaje)
                     .then(() => {
                         console.log("🎉 ¡Foto enviada correctamente al chat!");
-                        event.target.value = ''; // Limpiar input
+                        event.target.value = ''; 
                     })
                     .catch(err => {
                         console.error("Error al subir a Firebase:", err);
-                        alert("Error al enviar foto: " + err.message);
                     });
 
             } catch (err) {
@@ -126,9 +125,10 @@ window.inicializarChat = function() {
 
             let multimediaHTML = '';
             if (msg.multimedia) {
+                console.log("🖼️ Renderizando imagen en mensaje de:", autor);
                 multimediaHTML = `
-                    <div style="margin-top: 6px; margin-bottom: 6px; border-radius: 4px; overflow: hidden; border: 1px solid #00f3ff;">
-                        <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Media tribuna" style="max-width: 100%; width: 220px; height: auto; display: block; cursor: pointer;" loading="lazy">
+                    <div style="margin: 8px 0; border-radius: 6px; overflow: hidden; border: 1px solid var(--neon-azul, #00f3ff); background: #000;">
+                        <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Foto tribuna" style="width: 100%; max-width: 240px; height: auto; display: block; margin: 0 auto; cursor: pointer;" loading="lazy">
                     </div>
                 `;
             } else if (texto.includes('youtube.com') || texto.includes('youtu.be')) {
