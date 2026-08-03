@@ -1,9 +1,9 @@
 // ==========================================
-// CHAT.JS - RENDERIZADO FORZADO CON LOGS (v4.9)
+// CHAT.JS - MOTOR CON SENSORES DE IMAGEN (v5.0)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 CHAT.JS CARGADO (VERSIÓN 14)");
+    console.log("🚀 CHAT.JS CARGADO (VERSIÓN 15 - DIAGNÓSTICO DE IMAGEN)");
     configurarInputsChatGlobales();
 });
 
@@ -48,7 +48,7 @@ function procesarArchivoDirecto(event) {
         img.onload = () => {
             try {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 500; 
+                const MAX_WIDTH = 400; // Reducido un poco para garantizar bajo peso en payload
                 let width = img.width;
                 let height = img.height;
 
@@ -69,8 +69,8 @@ function procesarArchivoDirecto(event) {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
-                const base64Comprimido = canvas.toDataURL('image/jpeg', 0.60);
-                console.log("✅ Imagen comprimida. Subiendo a Firebase...");
+                const base64Comprimido = canvas.toDataURL('image/jpeg', 0.50);
+                console.log("✅ Imagen comprimida (Base64 length:", base64Comprimido.length, "). Subiendo a Firebase...");
 
                 if (typeof firebase === 'undefined') return;
 
@@ -125,10 +125,9 @@ window.inicializarChat = function() {
 
             let multimediaHTML = '';
             if (msg.multimedia) {
-                console.log("🖼️ Renderizando imagen en mensaje de:", autor);
                 multimediaHTML = `
-                    <div style="margin: 8px 0; border-radius: 6px; overflow: hidden; border: 1px solid var(--neon-azul, #00f3ff); background: #000;">
-                        <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Foto tribuna" style="width: 100%; max-width: 240px; height: auto; display: block; margin: 0 auto; cursor: pointer;" loading="lazy">
+                    <div style="margin: 8px 0; border-radius: 6px; overflow: hidden; border: 2px solid #00f3ff; background: #111; max-width: 220px;">
+                        <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Foto tribuna" style="width: 100%; height: auto; display: block; margin: 0 auto; cursor: pointer;" onload="console.log('✅ IMAGEN CARGADA CORRECTAMENTE EN DOM')" onerror="console.error('❌ ERROR: LA ETIQUETA IMG NO PUDO RENDERIZAR EL BASE64'); this.style.border='4px solid red';" loading="lazy">
                     </div>
                 `;
             } else if (texto.includes('youtube.com') || texto.includes('youtu.be')) {
