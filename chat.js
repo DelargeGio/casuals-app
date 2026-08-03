@@ -1,30 +1,22 @@
 // ==========================================
-// CHAT.JS - MOTOR BLINDADO CON GESTOS DIRECTOS (v4.5)
+// CHAT.JS - MOTOR TÁCTIL DIRECTO (v4.6)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 CHAT.JS CARGADO (MODO GESTO DIRECTO)");
+    console.log("🚀 CHAT.JS CARGADO (MODO TÁCTIL DIRECTO)");
     configurarInputsChatGlobales();
 });
 
 function configurarInputsChatGlobales() {
-    const btnCam = document.getElementById('btn-trigger-cam');
     const inputCam = document.getElementById('input-foto-cam');
-    if (btnCam && inputCam) {
-        btnCam.addEventListener('click', (e) => {
-            e.preventDefault();
-            inputCam.click(); // Disparo síncrono permitido por Android
-        });
+    if (inputCam && !inputCam.dataset.listenerConfigured) {
+        inputCam.dataset.listenerConfigured = "true";
         inputCam.addEventListener('change', (e) => procesarArchivoDirecto(e));
     }
 
-    const btnGaleria = document.getElementById('btn-trigger-galeria');
     const inputGaleria = document.getElementById('input-foto-galeria');
-    if (btnGaleria && inputGaleria) {
-        btnGaleria.addEventListener('click', (e) => {
-            e.preventDefault();
-            inputGaleria.click();
-        });
+    if (inputGaleria && !inputGaleria.dataset.listenerConfigured) {
+        inputGaleria.dataset.listenerConfigured = "true";
         inputGaleria.addEventListener('change', (e) => procesarArchivoDirecto(e));
     }
 
@@ -47,7 +39,7 @@ function procesarArchivoDirecto(event) {
     const file = event.target.files ? event.target.files[0] : null;
     if (!file) return;
 
-    console.log("📂 Procesando imagen capturada...");
+    console.log("📂 Archivo detectado. Procesando...");
     const reader = new FileReader();
     reader.onload = (e) => {
         const rawBase64 = e.target.result;
