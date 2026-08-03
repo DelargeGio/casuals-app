@@ -75,7 +75,6 @@ window.inicializarChat = function() {
             const msg = data[key];
             const autor = escaparHTML(msg.autor || 'Anónimo');
             
-            // Filtro inteligente para ocultar texto basura o base64 viejo en las burbujas
             let textoCrudo = msg.texto || '';
             if (textoCrudo.includes('data:image') || textoCrudo.includes('<div') || textoCrudo.includes('base64')) {
                 textoCrudo = ''; 
