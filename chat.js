@@ -1,72 +1,43 @@
 // ==========================================
-// CHAT.JS - MOTOR BLINDADO MÓVIL (v4.3)
+// CHAT.JS - MOTOR DEFINITIVO NATIVO MÓVIL (v4.4)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 CHAT.JS CARGADO (MODO MÓVIL BLINDADO)");
-    configurarInputsChatGlobales();
+    console.log("🚀 CHAT.JS CARGADO (MODO NATIVO DIRECTO)");
+    configurarInputsNativos();
 });
 
-function configurarInputsChatGlobales() {
+function configurarInputsNativos() {
     const inputGaleria = document.getElementById('input-foto-galeria');
-    if (inputGaleria && !inputGaleria.dataset.listenerConfigured) {
-        inputGaleria.dataset.listenerConfigured = "true";
-        inputGaleria.addEventListener('change', (e) => {
-            prepararArchivoChat(e);
-        });
-    }
-
     const inputCam = document.getElementById('input-foto-cam');
-    if (inputCam && !inputCam.dataset.listenerConfigured) {
-        inputCam.dataset.listenerConfigured = "true";
-        inputCam.addEventListener('change', (e) => {
-            prepararArchivoChat(e);
-        });
+
+    if (inputGaleria) {
+        inputGaleria.onchange = (e) => procesarArchivoDirecto(e);
     }
 
-    // EL TRUCO CLAVE PARA ANDROID: Al volver de la cámara externa, atrapamos la foto por el foco
-    window.addEventListener('focus', () => {
-        if (inputCam && inputCam.files && inputCam.files[0]) {
-            console.log("📸 Foto de cámara detectada al recuperar el foco.");
-            const file = inputCam.files[0];
-            inputCam.value = ''; // Limpiar
-            procesarYEnviarArchivo(file);
-        } else if (inputGaleria && inputGaleria.files && inputGaleria.files[0]) {
-            console.log("📂 Foto de galería detectada al recuperar el foco.");
-            const file = inputGaleria.files[0];
-            inputGaleria.value = ''; // Limpiar
-            procesarYEnviarArchivo(file);
-        }
-    });
+    if (inputCam) {
+        inputCam.onchange = (e) => procesarArchivoDirecto(e);
+    }
 
     const btnEnviar = document.getElementById('btn-enviar-msg');
-    if (btnEnviar && !btnEnviar.dataset.listenerConfigured) {
-        btnEnviar.dataset.listenerConfigured = "true";
-        btnEnviar.addEventListener('click', () => {
-            enviarMensajeChat();
-        });
+    if (btnEnviar) {
+        btnEnviar.onclick = () => enviarMensajeChat();
     }
 
     const inputTexto = document.getElementById('chat-in');
-    if (inputTexto && !inputTexto.dataset.listenerConfigured) {
-        inputTexto.dataset.listenerConfigured = "true";
-        inputTexto.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                enviarMensajeChat();
-            }
-        });
+    if (inputTexto) {
+        inputTexto.onkeypress = (e) => {
+            if (e.key === 'Enter') enviarMensajeChat();
+        };
     }
 }
 
-function prepararArchivoChat(event) {
+function procesarArchivoDirecto(event) {
     const file = event.target.files ? event.target.files[0] : null;
     if (!file) return;
-    event.target.value = ''; // Limpiar
-    procesarYEnviarArchivo(file);
-}
 
-function procesarYEnviarArchivo(file) {
-    console.log("📂 Procesando y comprimiendo imagen localmente...");
+    console.log("📂 Archivo seleccionado directamente. Procesando...");
+    
     const reader = new FileReader();
     reader.onload = (e) => {
         const rawBase64 = e.target.result;
@@ -97,10 +68,10 @@ function procesarYEnviarArchivo(file) {
                 ctx.drawImage(img, 0, 0, width, height);
 
                 const base64Comprimido = canvas.toDataURL('image/jpeg', 0.60);
-                console.log("✅ Imagen comprimida. Subiendo a Firebase...");
+                console.log("✅ Compresión exitosa. Subiendo a Firebase...");
 
                 if (typeof firebase === 'undefined') {
-                    console.error("Firebase no disponible");
+                    alert("Error: Firebase no disponible");
                     return;
                 }
 
@@ -113,15 +84,15 @@ function procesarYEnviarArchivo(file) {
 
                 firebase.database().ref('mensajes').push(nuevoMensaje)
                     .then(() => {
-                        console.log("🎉 ¡Foto enviada con éxito al chat!");
+                        console.log("🎉 ¡Foto enviada correctamente!");
+                        event.target.value = ''; // Limpiar
                     })
                     .catch(err => {
-                        console.error("Error al enviar foto:", err);
-                        alert("Error al enviar foto: " + err.message);
+                        alert("Error al subir a Firebase: " + err.message);
                     });
 
             } catch (err) {
-                console.error("Error al comprimir:", err);
+                alert("Error al comprimir imagen: " + err.message);
             }
         };
         img.src = rawBase64;
