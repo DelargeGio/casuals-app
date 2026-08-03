@@ -1,12 +1,25 @@
 // ==========================================
-// FEEDS.JS - PULIDO FINO (TIEMPOS RELATIVOS + AUTO-SCROLL)
+// FEEDS.JS - MOTOR TURBO INDUSTRIAL (v3.4 - ICONO LIMPIO)
 // ==========================================
 
-window.inicializarFeedEstructuraUnica = function() {
+const ADMINS_AUTORIZADOS = ["Calavera ☠️", "Calavera"];
+let categoriaSeleccionadaFeed = 'jornada';
+let feedEstructuraCreada = false;
+let imagenesFeedTemporal = [];
+
+window.renderFeed = function() {
+    inicializarFeedEstructuraUnica();
+};
+
+window.cargarFeed = function() {
+    inicializarFeedEstructuraUnica();
+};
+
+function inicializarFeedEstructuraUnica() {
     const feedContainer = document.getElementById('feed-container');
     if (!feedContainer) return;
 
-    if (!window.feedEstructuraCreada) {
+    if (!feedEstructuraCreada) {
         feedContainer.style.cssText = `
             width: 100%;
             height: 100%;
@@ -41,7 +54,7 @@ window.inicializarFeedEstructuraUnica = function() {
                 </div>
 
                 <div id="feed-composer-wrapper" style="padding: 8px 12px; background: rgba(10, 15, 12, 0.98); border-bottom: 2px solid rgba(0, 243, 255, 0.25); flex-shrink: 0; box-sizing: border-box;">
-                    <textarea id="feed-input-texto" placeholder="// Transmitir reporte..." rows="2" style="width: 100%; background: #030504; color: #00f3ff; border: 1px solid rgba(0,243,255,0.3); padding: 6px; border-radius: 4px; font-family: monospace; resize: none; outline: none; font-size: 0.75rem; box-sizing: border-box;"></textarea>
+                    <textarea id="feed-input-texto" placeholder="// Transmitir reporte o flayer..." rows="2" style="width: 100%; background: #030504; color: #00f3ff; border: 1px solid rgba(0,243,255,0.3); padding: 6px; border-radius: 4px; font-family: monospace; resize: none; outline: none; font-size: 0.75rem; box-sizing: border-box;"></textarea>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px; gap: 6px;">
                         <label style="cursor:pointer; background: rgba(0,243,255,0.08); border: 1px solid rgba(0,243,255,0.3); padding: 4px 8px; border-radius: 4px; font-size: 0.65rem; color: #00f3ff; display: flex; align-items: center; gap: 4px; font-family: monospace;">
                             📸 Foto <input type="file" id="feed-input-fotos" accept="image/*" style="display:none;">
@@ -52,12 +65,12 @@ window.inicializarFeedEstructuraUnica = function() {
                     <div id="feed-preview-imagenes" style="display:none; gap: 6px; margin-top: 5px;"></div>
                 </div>
 
-                <div id="feed-posts-lista" style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 12px; padding-bottom: 50px; box-sizing: border-box; width: 100%;">
+                <div id="feed-posts-lista" style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 12px; padding-bottom: 40px; box-sizing: border-box; width: 100%;">
                     <div style="text-align: center; color: #00f3ff; margin-top: 30px; font-size: 0.75rem; font-family: monospace;">[SINCRONIZANDO...]</div>
                 </div>
             </div>
         `;
-        window.feedEstructuraCreada = true;
+        feedEstructuraCreada = true;
 
         const inputFotos = document.getElementById('feed-input-fotos');
         if (inputFotos) inputFotos.addEventListener('change', prepararImagenesFeed);
@@ -66,41 +79,29 @@ window.inicializarFeedEstructuraUnica = function() {
         if (btnPublicar) btnPublicar.addEventListener('click', window.publicarEnFeed);
     }
 
-    actualizarEstilosBotonesCategoria(window.categoriaSeleccionadaFeed || 'jornada');
-    if ((window.categoriaSeleccionadaFeed || 'jornada') === 'jornada') {
-        renderizarInformacionEquipo();
-    } else {
-        cargarPostsFirebase(window.categoriaSeleccionadaFeed);
-    }
-};
-
-window.renderFeed = function() {
-    window.inicializarFeedEstructuraUnica();
-};
-
-window.cargarFeed = function() {
-    window.inicializarFeedEstructuraUnica();
-};
-
-window.categoriaSeleccionadaFeed = 'jornada';
-window.feedEstructuraCreada = false;
-let imagenesFeedTemporal = [];
+    actualizarPermisosYEstilos(categoriaSeleccionadaFeed);
+    cargarPostsFirebase(categoriaSeleccionadaFeed);
+}
 
 window.cambiarCategoriaFeed = function(cat) {
-    window.categoriaSeleccionadaFeed = cat;
-    actualizarEstilosBotonesCategoria(cat);
-    
-    const composer = document.getElementById('feed-composer-wrapper');
-    if (composer) composer.style.display = (cat === 'jornada') ? 'none' : 'block';
-
-    if (cat === 'jornada') {
-        renderizarInformacionEquipo();
-    } else {
-        cargarPostsFirebase(cat);
-    }
+    categoriaSeleccionadaFeed = cat;
+    actualizarPermisosYEstilos(cat);
+    cargarPostsFirebase(cat);
 };
 
-function actualizarEstilosBotonesCategoria(catActiva) {
+function actualizarPermisosYEstilos(catActiva) {
+    const usuarioActual = localStorage.getItem('usuario_nombre') || '';
+    const esAdmin = ADMINS_AUTORIZADOS.some(a => usuarioActual.includes("Calavera") || usuarioActual === a);
+    const composer = document.getElementById('feed-composer-wrapper');
+
+    if (composer) {
+        if (catActiva === 'jornada' && !esAdmin) {
+            composer.style.display = 'none';
+        } else {
+            composer.style.display = 'block';
+        }
+    }
+
     ['jornada', 'banderas', 'viajes', 'ropero', 'afanes'].forEach(c => {
         const btn = document.getElementById(`btn-cat-${c}`);
         if (!btn) return;
@@ -118,51 +119,6 @@ function actualizarEstilosBotonesCategoria(catActiva) {
     });
 }
 
-function renderizarInformacionEquipo() {
-    const listaPosts = document.getElementById('feed-posts-lista');
-    if (!listaPosts) return;
-
-    listaPosts.innerHTML = `
-        <div style="width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 12px; font-family: monospace; box-sizing: border-box;">
-            <div style="background: #080c09; border: 1px solid #00f3ff; border-radius: 6px; padding: 12px; box-sizing: border-box;">
-                <div style="font-size: 0.65rem; color: #00f3ff; margin-bottom: 4px;">[JORNADA 04 // OFICIAL]</div>
-                <div style="font-size: 0.95rem; font-weight: bold; color: #fff; margin-bottom: 8px;">PRÓXIMO ENCUENTRO TRIBUNA</div>
-                <div style="font-size: 0.75rem; color: #bbb; display: flex; justify-content: space-between; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
-                    <span>📅 Domingo</span>
-                    <span>⏰ 18:00 HRS</span>
-                </div>
-            </div>
-            <div style="background: #080c09; border: 1px solid rgba(0,255,102,0.4); border-radius: 6px; padding: 12px; box-sizing: border-box;">
-                <div style="font-size: 0.65rem; color: #00ff66; margin-bottom: 4px;">[LOGÍSTICA CARAVANA]</div>
-                <p style="font-size: 0.75rem; color: #ddd; margin: 0 0 8px 0; line-height: 1.4;">
-                    Punto de reunión principal 3 horas antes. Respeto a los códigos y colores.
-                </p>
-            </div>
-        </div>
-    `;
-}
-
-function obtenerIconoAutor(nombre) {
-    const n = (nombre || '').toLowerCase();
-    if (n.includes('calavera')) return '☠️';
-    if (n.includes('manu')) return '🇦🇷';
-    if (n.includes('pelu')) return '🧸';
-    if (n.includes('apple')) return '🍎';
-    if (n.includes('gio')) return '🕶️';
-    return '🏴‍☠️';
-}
-
-function calcularTiempoRelativo(timestamp) {
-    if (!timestamp) return 'Hace un momento';
-    const ahora = Date.now();
-    const diffMinutos = Math.floor((ahora - timestamp) / 60000);
-    if (diffMinutos < 1) return 'Hace un momento';
-    if (diffMinutos < 60) return `Hace ${diffMinutos} min`;
-    const diffHoras = Math.floor(diffMinutos / 60);
-    if (diffHoras < 24) return `Hace ${diffHoras} h`;
-    return `Hace ${Math.floor(diffHoras / 24)} d`;
-}
-
 function prepararImagenesFeed(event) {
     const file = event.target.files[0];
     if (!file || !file.type.startsWith('image/')) return;
@@ -175,7 +131,7 @@ function prepararImagenesFeed(event) {
         const img = new Image();
         img.onload = () => {
             const canvas = document.createElement('canvas');
-            const MAX = 600;
+            const MAX = 800;
             let w = img.width, h = img.height;
             if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } }
             else { if (h > MAX) { w *= MAX / h; h = MAX; } }
@@ -183,12 +139,12 @@ function prepararImagenesFeed(event) {
             canvas.height = h;
             canvas.getContext('2d').drawImage(img, 0, 0, w, h);
             
-            imagenesFeedTemporal = [canvas.toDataURL('image/jpeg', 0.65)];
+            imagenesFeedTemporal = [canvas.toDataURL('image/jpeg', 0.75)];
             if (preview) {
                 preview.innerHTML = `<img src="${imagenesFeedTemporal[0]}" style="width:45px; height:45px; object-fit:cover; border-radius:4px; border:1px solid #00f3ff;">`;
                 preview.style.display = 'flex';
             }
-            if (status) status.textContent = '[Foto lista]';
+            if (status) status.textContent = '[Flayer listo]';
         };
         img.src = e.target.result;
     };
@@ -202,18 +158,19 @@ window.publicarEnFeed = function() {
     if (!texto && imagenesFeedTemporal.length === 0) return;
     if (typeof firebase === 'undefined') return;
 
-    const autor = localStorage.getItem('usuario_nombre') || 'Calavera';
+    const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
     const nuevoPost = {
         autor: autor,
         descripcion: texto,
         imagen: imagenesFeedTemporal[0] || '',
+        tiempo: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
 
     const btn = document.getElementById('feed-btn-publicar');
     if (btn) btn.disabled = true;
 
-    firebase.database().ref('feed_' + window.categoriaSeleccionadaFeed).push(nuevoPost)
+    firebase.database().ref('feed_' + categoriaSeleccionadaFeed).push(nuevoPost)
         .then(() => {
             imagenesFeedTemporal = [];
             if (textarea) textarea.value = '';
@@ -221,10 +178,6 @@ window.publicarEnFeed = function() {
             if (prev) { prev.innerHTML = ''; prev.style.display = 'none'; }
             const stat = document.getElementById('feed-status-fotos');
             if (stat) stat.textContent = '';
-            
-            // Auto-scroll al inicio del feed para ver la nueva publicación
-            const listaPosts = document.getElementById('feed-posts-lista');
-            if (listaPosts) listaPosts.scrollTop = 0;
         })
         .catch(err => console.error(err))
         .finally(() => { if (btn) btn.disabled = false; });
@@ -235,42 +188,46 @@ function cargarPostsFirebase(categoria) {
     if (!listaPosts) return;
     if (typeof firebase === 'undefined') return;
 
-    const postsBaseDefault = {
-        banderas: [
-            { autor: "Calavera", descripcion: "Control de estandartes y trapos largos listos para el recibimiento oficial en tribuna.", timestamp: Date.now() - 3600000, imagen: "" }
-        ],
-        viajes: [
-            { autor: "Manu", descripcion: "Punto de salida de los micros confirmado. Nadie se queda a pie, puntualidad absoluta.", timestamp: Date.now() - 7200000, imagen: "" }
-        ],
-        ropero: [
-            { autor: "Pelu", descripcion: "Nueva tirada de camperas y capuchas negras disponibles para los pibes.", timestamp: Date.now() - 10800000, imagen: "" }
-        ],
-        afanes: [
-            { autor: "Apple", descripcion: "Zona perimetral despejada. Mantenerse en bloque y atentos a las señales.", timestamp: Date.now() - 14400000, imagen: "" }
-        ]
-    };
-
+    const usuarioActual = localStorage.getItem('usuario_nombre') || '';
     const ref = firebase.database().ref('feed_' + categoria).limitToLast(15);
+    
     ref.off();
     ref.on('value', (snapshot) => {
         const data = snapshot.val();
-        const postsAMostrar = data || postsBaseDefault[categoria] || {};
+        if (!data) {
+            listaPosts.innerHTML = `<div style="text-align: center; color: #666; margin-top: 30px; font-size: 0.75rem; font-family: monospace;">[!] SIN NOVEDADES EN ESTA SECCIÓN</div>`;
+            return;
+        }
 
         const escapar = window.escaparHTML || (s => s);
 
-        const htmlPosts = Object.keys(postsAMostrar).reverse().map(key => {
-            const post = postsAMostrar[key];
-            const autor = escapar(post.autor || 'Calavera');
-            const icono = obtenerIconoAutor(autor);
+        const htmlPosts = Object.keys(data).reverse().map(key => {
+            const post = data[key];
+            const autor = escapar(post.autor || 'Calavera ☠️');
             const desc = escapar(post.descripcion || '');
-            const tiempo = calcularTiempoRelativo(post.timestamp);
-            const img = post.imagen ? `<div style="width:100%; background:#000; max-height:300px; overflow:hidden;"><img src="${post.imagen}" onclick="window.abrirVisorImagen('${post.imagen}')" style="width:100%; height:auto; object-fit:cover; display:block; cursor:zoom-in;"></div>` : '';
+            const tiempo = escapar(post.tiempo || '');
+            const img = post.imagen ? `<div style="width:100%; background:#000; max-height:350px; overflow:hidden;"><img src="${post.imagen}" onclick="window.abrirVisorImagen('${post.imagen}')" style="width:100%; height:auto; object-fit:cover; display:block; cursor:zoom-in;"></div>` : '';
+
+            const esAutor = (post.autor === usuarioActual);
+            const esAdmin = ADMINS_AUTORIZADOS.some(a => usuarioActual.includes("Calavera") || usuarioActual === a);
+            let botonBorrarHTML = '';
+            
+            if (esAutor || esAdmin) {
+                botonBorrarHTML = `
+                    <button onclick="window.confirmarEliminacionPost('${categoria}', '${key}')" style="background:transparent; border:none; cursor:pointer; font-size:0.9rem; padding:0; opacity:0.7; outline:none;" title="Eliminar transmisión">
+                        🗑️
+                    </button>
+                `;
+            }
 
             return `
-                <div style="width:100%; max-width:440px; background:#080c09; border:1px solid rgba(0,243,255,0.25); border-radius:6px; overflow:hidden; font-family:monospace; box-sizing:border-box;">
+                <div id="post-card-${key}" style="width:100%; max-width:440px; background:#080c09; border:1px solid rgba(0,243,255,0.25); border-radius:6px; overflow:hidden; font-family:monospace; box-sizing:border-box;">
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:rgba(0,0,0,0.8); border-bottom:1px solid rgba(255,255,255,0.06);">
-                        <span style="font-size:0.75rem; font-weight:bold; color:#00ff66;">${icono} ${autor}</span>
-                        <span style="font-size:0.6rem; color:#777;">${tiempo}</span>
+                        <span style="font-size:0.75rem; font-weight:bold; color:#00ff66;">☠️ ${autor}</span>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:0.6rem; color:#777;">${tiempo}</span>
+                            ${botonBorrarHTML}
+                        </div>
                     </div>
                     ${img}
                     ${desc ? `<div style="padding:8px 10px; font-size:0.75rem; color:#e0e0e0; line-height:1.35; word-break:break-word;">${desc}</div>` : ''}
@@ -281,6 +238,21 @@ function cargarPostsFirebase(categoria) {
         listaPosts.innerHTML = htmlPosts;
     });
 }
+
+window.confirmarEliminacionPost = function(categoria, postId) {
+    const seguro = confirm("[ATENCIÓN] ¿Eliminar esta transmisión del feed?");
+    if (!seguro) return;
+
+    firebase.database().ref('feed_' + categoria).child(postId).remove()
+        .then(() => {
+            const card = document.getElementById(`post-card-${postId}`);
+            if (card) card.remove();
+        })
+        .catch(err => {
+            console.error("Error al eliminar post:", err);
+            alert("No se pudo eliminar la transmisión.");
+        });
+};
 
 window.abrirVisorImagen = function(url) {
     const modal = document.createElement('div');
