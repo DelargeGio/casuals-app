@@ -1,132 +1,114 @@
 // ==========================================
-// CHAT Y PRESENCIA UNIFICADO (Fuente de verdad)
+// CHAT.JS - MÓDULO BLINDADO Y SEGURO (v1.0)
 // ==========================================
 
-function obtenerColorUsuario(nombreOriginal) {
-    const nombre = (nombreOriginal || "").toLowerCase().trim();
-    if (nombre.includes("calavera")) return "#00FF66";
-    if (nombre.includes("apple")) return "#FF0055";
-    if (nombre.includes("pelu")) return "#D2691E";
-    if (nombre.includes("manu")) return "#00F2FF";
-    if (nombre.includes("gio")) return "#FF5E00";
-    return "#00F2FF"; 
-}
+window.inicializarChat = function() {
+    const mensajesLista = document.getElementById('mensajes-lista');
+    if (!mensajesLista) return;
 
-function obtenerIconoUsuario(nombreOriginal) {
-    const nombre = (nombreOriginal || "").toLowerCase().trim();
-    if (nombre.includes("calavera")) return "☠️";
-    if (nombre.includes("apple")) return "🍎";
-    if (nombre.includes("pelu")) return "🧸";
-    if (nombre.includes("manu")) return "🇦🇷";
-    if (nombre.includes("gio")) return "🤹🏽";
-    return "👤"; 
-}
-
-window.enviarMensaje = function() {
-    const input = document.getElementById("chat-in");
-    if (!input) return;
-    const texto = input.value.trim();
-    if (!texto) return;
-
-    // Llave unificada y correcta
-    const usuario = localStorage.getItem("usuario_nombre") || "Anónimo";
-    
-    if (typeof firebase !== 'undefined') {
-        const dbRef = firebase.database().ref('mensajes');
-        dbRef.push({
-            autor: usuario,
-            texto: texto,
-            tiempo: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            timestamp: Date.now()
-        });
-    }
-    input.value = "";
-};
-
-window.cargarMensajes = function() {
-    const lista = document.getElementById("mensajes-lista");
-    if (!lista) return;
-
-    if (typeof firebase === 'undefined') return;
-
-    const dbRef = firebase.database().ref('mensajes').limitToLast(100);
-    dbRef.on('value', (snapshot) => {
-        lista.innerHTML = "";
-        const data = snapshot.val();
-        if (!data) return;
-
-        Object.keys(data).forEach((key) => {
-            const msg = data[key];
-            if (!msg || !msg.autor) return;
-
-            const colorUser = obtenerColorUsuario(msg.autor);
-            const iconoUser = obtenerIconoUsuario(msg.autor);
-            
-            const div = document.createElement("div");
-            div.style.margin = "8px";
-            div.style.padding = "8px";
-            div.style.background = "#222";
-            div.style.borderRadius = "5px";
-            div.style.borderLeft = `4px solid ${colorUser}`;
-            
-            div.innerHTML = `
-                <span style="color: ${colorUser}; font-weight: bold;">${iconoUser} ${msg.autor}</span>
-                <p style="margin: 4px 0; color: #fff;">${msg.texto}</p>
-                <span style="font-size: 10px; color: #888;">${msg.tiempo || ""}</span>
-            `;
-            lista.appendChild(div);
-        });
-        lista.scrollTop = lista.scrollHeight;
-    });
-};
-
-window.iniciarPresencia = function() {
-    if (typeof firebase === 'undefined') return;
-    
-    // Llave unificada y correcta
-    const usuario = localStorage.getItem("usuario_nombre");
-    if (!usuario) {
-        console.warn("⚠️ No hay usuario_nombre para la presencia.");
+    if (typeof firebase === 'undefined') {
+        console.error('Firebase no está disponible.');
         return;
     }
 
-    const idUsuarioLimpio = usuario.replace(/[.#$\/\[\]]/g, '_');
+    const chatRef = firebase.database().ref('mensajes').limitToLast(50);
+    
+    // Limpiar oyentes previos para evitar fugas de memoria
+    chatRef.off();
 
-    const conexionRef = firebase.database().ref('.info/connected');
-    const presenciaRef = firebase.database().ref('presencia/' + idUsuarioLimpio);
-
-    conexionRef.on('value', (snapshot) => {
-        if (snapshot.val() === true) {
-            presenciaRef.onDisconnect().remove();
-            presenciaRef.set({
-                nombre: usuario,
-                conectado: true,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            }).catch(err => console.error("Error al escribir presencia:", err));
-        }
-    });
-
-    firebase.database().ref('presencia').on('value', (snapshot) => {
-        const contenedorNombres = document.getElementById("lista-nombres-conectados");
-        if (!contenedorNombres) return;
-
-        const conectados = snapshot.val();
-        if (!conectados) {
-            contenedorNombres.innerHTML = "Ninguno conectado";
+    chatRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data) {
+            mensajesLista.innerHTML = `<div style="text-align:center; color:#00f3ff; margin-top:20px; font-family:monospace; font-size:0.75rem;">[SIN MENSAJES EN TRIBUNA]</div>`;
             return;
         }
 
-        let htmlNombres = "";
-        Object.keys(conectados).forEach(key => {
-            const userObj = conectados[key];
-            if (userObj && userObj.nombre) {
-                const icono = obtenerIconoUsuario(userObj.nombre);
-                const color = obtenerColorUsuario(userObj.nombre);
-                htmlNombres += `<span style="color: ${color}; margin-right: 10px; font-weight: bold;">${icono} ${userObj.nombre}</span>`;
+        const usuarioActual = localStorage.getItem('usuario_nombre') || '';
+        let htmlMensajes = '';
+
+        Object.keys(data).forEach(key => {
+            const msg = data[key];
+            const autor = escaparHTML(msg.autor || 'Anónimo');
+            const texto = escaparHTML(msg.texto || '');
+            const esMio = (msg.autor === usuarioActual);
+            const claseAlineacion = esMio ? 'derecha' : 'izquierda';
+            const tiempo = calcularTiempoChat(msg.timestamp);
+
+            // Procesamiento multimedia seguro (Imágenes o YouTube)
+            let multimediaHTML = '';
+            if (msg.multimedia) {
+                if (msg.multimedia.startsWith('data:image') || msg.multimedia.startsWith('http')) {
+                    multimediaHTML = `
+                        <div class="multimedia-box">
+                            <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Media tribuna">
+                        </div>
+                    `;
+                }
+            } else if (texto.includes('youtube.com') || texto.includes('youtu.be')) {
+                const embedUrl = convertirAEmbedYouTube(texto);
+                if (embedUrl) {
+                    multimediaHTML = `
+                        <div class="multimedia-box">
+                            <iframe src="${embedUrl}" frameborder="0" allowfullscreen></iframe>
+                        </div>
+                    `;
+                }
             }
+
+            htmlMensajes += `
+                <div class="mensaje-wrapper ${claseAlineacion}">
+                    <div class="burbuja-industrial">
+                        <span class="autor-tag">${autor}</span>
+                        ${texto ? `<p class="texto-mensaje">${texto}</p>` : ''}
+                        ${multimediaHTML}
+                        <span class="mensaje-tiempo">${tiempo}</span>
+                    </div>
+                </div>
+            `;
         });
-        contenedorNombres.innerHTML = htmlNombres || "Ninguno conectado";
-    }, (error) => {
-        console.error("Error al leer la presencia:", error);
+
+        mensajesLista.innerHTML = htmlMensajes;
+        
+        // Auto-scroll al final del chat para ver el mensaje más reciente
+        mensajesLista.scrollTop = mensajesLista.scrollHeight;
+
+        // Asignar listeners táctiles seguros a las imágenes del chat
+        mensajesLista.querySelectorAll('.chat-img-zoom').forEach(img => {
+            img.addEventListener('click', (e) => {
+                const url = e.currentTarget.getAttribute('data-url');
+                if (window.abrirVisorImagen) window.abrirVisorImagen(url);
+            });
+        });
     });
 };
+
+// Función auxiliar de sanitización
+function escaparHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function calcularTiempoChat(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function convertirAEmbedYouTube(url) {
+    try {
+        let videoId = '';
+        if (url.includes('youtu.be/')) {
+            videoId = url.split('youtu.be/')[1]?.split('?')[0];
+        } else if (url.includes('watch?v=')) {
+            videoId = url.split('watch?v=')[1]?.split('&')[0];
+        }
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    } catch (e) {
+        return null;
+    }
+}

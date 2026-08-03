@@ -23,18 +23,3 @@ messaging.onBackgroundMessage((payload) => {
     };
     self.registration.showNotification(notificationTitle, notificationOptions);
 });
-// Forzar presencia activa para que no se quede cargando
-window.addEventListener("DOMContentLoaded", () => {
-    setTimeout(() => {
-        const presenciaEl = document.getElementById("presencia-status") || document.querySelector(".conectados-txt") || document.querySelector("[id*='presencia']");
-        if (presenciaEl) {
-            presenciaEl.innerText = "ONLINE - Al tiro";
-        }
-    }, 1000);
-});
-
-// Función de respaldo para cerrar sesión sin errores
-function cerrarSesion() {
-    localStorage.clear();
-    location.reload();
-}

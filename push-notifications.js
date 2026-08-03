@@ -25,7 +25,6 @@ function inicializarNotificacionesPush() {
                 if (permission === 'granted') {
                     console.log('✅ Permiso de notificaciones concedido.');
 
-                    // Esperar a que el Service Worker esté completamente listo y activo
                     navigator.serviceWorker.ready.then((swRegistration) => {
                         messaging.getToken({ serviceWorkerRegistration: swRegistration })
                             .then((currentToken) => {
@@ -51,7 +50,7 @@ function inicializarNotificacionesPush() {
 }
 
 function guardarTokenEnFirebase(token) {
-    const usuario = localStorage.getItem("casuals_user") || "Agente_" + Math.floor(Math.random() * 9000 + 1000);
+    const usuario = localStorage.getItem("usuario_nombre") || "Agente_" + Math.floor(Math.random() * 9000 + 1000);
     const tokenLimpio = token.replace(/[.#$\/\[\]]/g, '_');
     
     if (typeof firebase !== 'undefined' && window.db) {
