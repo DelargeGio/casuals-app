@@ -81,17 +81,17 @@
             <div id="mensajes-container">
                 <div id="mensajes-lista"></div>
                 
-                <div class="chat-input-container">
+                <div class="chat-input-container" style="position: relative;">
                     <input type="text" id="chat-in" placeholder="Escribe un mensaje...">
                     <button class="send-btn" id="btn-enviar-msg">➤</button>
                     <button id="btn-bengala-humo" class="smoke-btn">💨</button>
                     
-                    <label class="image-btn" style="cursor: pointer;" title="Tomar Foto">
-                        📸<input type="file" id="input-foto-cam" accept="image/*" capture="environment" style="display: none;">
+                    <label class="image-btn" style="cursor: pointer; position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;" title="Tomar Foto">
+                        📸<input type="file" id="input-foto-cam" accept="image/*" capture="environment" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;">
                     </label>
 
-                    <label class="image-btn" style="cursor: pointer;" title="Subir desde Galería">
-                        📁<input type="file" id="input-foto-galeria" accept="image/*,video/*" style="display: none;">
+                    <label class="image-btn" style="cursor: pointer; position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;" title="Subir desde Galería">
+                        📁<input type="file" id="input-foto-galeria" accept="image/*,video/*" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;">
                     </label>
                 </div>
             </div>
