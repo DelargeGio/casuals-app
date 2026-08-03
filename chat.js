@@ -1,5 +1,5 @@
 // ==========================================
-// CHAT.JS - MOTOR DEFINITIVO CON COMPRESIÓN AGRESIVA (v3.3)
+// CHAT.JS - MOTOR BLINDADO CON TIMEOUT Y FALLBACK (v3.4)
 // ==========================================
 
 let multimediaChatTemporal = null;
@@ -136,63 +136,99 @@ function prepararArchivoChat(event) {
         return;
     }
 
-    console.log("📂 Archivo detectado:", file.name, "Tamaño original:", (file.size / 1024).toFixed(2), "KB");
+    console.log("📂 Archivo detectado:", file.name, "Tamaño:", (file.size / 1024).toFixed(2), "KB");
     const inputTexto = document.getElementById('chat-in');
 
-    if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 600; // Ancho optimizado para Firebase
-                let width = img.width;
-                let height = img.height;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const rawBase64 = e.target.result;
 
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_WIDTH) {
-                        width *= MAX_WIDTH / height;
-                        height = MAX_WIDTH;
+        if (file.type.startsWith('image/')) {
+            const img = new Image();
+            let finished = false;
+
+            // Timeout de seguridad: si el canvas se atora en Android, usa el base64 directo tras 3 segundos
+            const safetyTimeout = setTimeout(() => {
+                if (!finished) {
+                    finished = true;
+                    console.warn("⚠️ Canvas timeout en Android, usando respaldo seguro.");
+                    multimediaChatTemporal = rawBase64;
+                    if (inputTexto) {
+                        inputTexto.placeholder = "[📷 Foto lista para enviar]";
+                        inputTexto.focus();
                     }
                 }
+            }, 3000);
 
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
+            img.onload = () => {
+                if (finished) return;
+                finished = true;
+                clearTimeout(safetyTimeout);
 
-                // Compresión agresiva a JPEG con calidad 0.60 para que pese muy poco
-                multimediaChatTemporal = canvas.toDataURL('image/jpeg', 0.60);
-                console.log("✅ Imagen comprimida. Nuevo tamaño base64:", (multimediaChatTemporal.length / 1024).toFixed(2), "KB");
+                try {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_WIDTH) {
+                            width *= MAX_WIDTH / height;
+                            height = MAX_WIDTH;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    multimediaChatTemporal = canvas.toDataURL('image/jpeg', 0.70);
+                    console.log("✅ Imagen procesada y comprimida correctamente.");
+                } catch (err) {
+                    console.warn("⚠️ Error en canvas, usando base64 crudo:", err);
+                    multimediaChatTemporal = rawBase64;
+                }
 
                 if (inputTexto) {
                     inputTexto.placeholder = "[📷 Foto lista para enviar]";
                     inputTexto.focus();
                 }
             };
+
             img.onerror = (err) => {
-                console.error("❌ Error al cargar la imagen en canvas:", err);
-                alert("No se pudo procesar la imagen.");
+                if (finished) return;
+                finished = true;
+                clearTimeout(safetyTimeout);
+                console.warn("⚠️ Error al cargar objeto Image, usando base64 crudo.");
+                multimediaChatTemporal = rawBase64;
+                if (inputTexto) {
+                    inputTexto.placeholder = "[📷 Foto lista para enviar]";
+                    inputTexto.focus();
+                }
             };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    } else {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            multimediaChatTemporal = e.target.result;
+
+            img.src = rawBase64;
+        } else {
+            multimediaChatTemporal = rawBase64;
             if (inputTexto) {
-                inputTexto.placeholder = "[📁 Archivo listo]";
+                inputTexto.placeholder = "[📁 Archivo listo para enviar]";
                 inputTexto.focus();
             }
-        };
-        reader.readAsDataURL(file);
-    }
+        }
+    };
+
+    reader.onerror = (error) => {
+        console.error("❌ Error FileReader:", error);
+        alert("No se pudo leer el archivo.");
+    };
+
+    reader.readAsDataURL(file);
 }
 
 window.enviarMensajeChat = function() {
@@ -216,7 +252,7 @@ window.enviarMensajeChat = function() {
 
     firebase.database().ref('mensajes').push(nuevoMensaje)
         .then(() => {
-            console.log("🎉 Mensaje con archivo enviado exitosamente a Firebase.");
+            console.log("🎉 Mensaje con archivo enviado exitosamente.");
             if (inputTexto) {
                 inputTexto.value = '';
                 inputTexto.placeholder = "Escribe un mensaje...";
