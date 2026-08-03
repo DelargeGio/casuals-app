@@ -1,9 +1,9 @@
 // ==========================================
-// CHAT.JS - MOTOR CON SENSORES DE IMAGEN (v5.0)
+// CHAT.JS - DEPURADOR DE DATOS Y MULTIMEDIA (v5.1)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 CHAT.JS CARGADO (VERSIÓN 15 - DIAGNÓSTICO DE IMAGEN)");
+    console.log("🚀 CHAT.JS CARGADO (VERSIÓN 5.1 - DEPURACIÓN)");
     configurarInputsChatGlobales();
 });
 
@@ -48,7 +48,7 @@ function procesarArchivoDirecto(event) {
         img.onload = () => {
             try {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 400; // Reducido un poco para garantizar bajo peso en payload
+                const MAX_WIDTH = 350; // Reducido para asegurar ligereza en la base de datos
                 let width = img.width;
                 let height = img.height;
 
@@ -69,8 +69,8 @@ function procesarArchivoDirecto(event) {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
-                const base64Comprimido = canvas.toDataURL('image/jpeg', 0.50);
-                console.log("✅ Imagen comprimida (Base64 length:", base64Comprimido.length, "). Subiendo a Firebase...");
+                const base64Comprimido = canvas.toDataURL('image/jpeg', 0.45);
+                console.log("✅ Imagen comprimida. Tamaño Base64:", base64Comprimido.length);
 
                 if (typeof firebase === 'undefined') return;
 
@@ -83,15 +83,15 @@ function procesarArchivoDirecto(event) {
 
                 firebase.database().ref('mensajes').push(nuevoMensaje)
                     .then(() => {
-                        console.log("🎉 ¡Foto enviada correctamente al chat!");
+                        console.log("🎉 ¡Foto enviada correctamente a Firebase!");
                         event.target.value = ''; 
                     })
                     .catch(err => {
-                        console.error("Error al subir a Firebase:", err);
+                        console.error("❌ Error al subir a Firebase:", err);
                     });
 
             } catch (err) {
-                console.error("Error en compresión:", err);
+                console.error("❌ Error en compresión:", err);
             }
         };
         img.src = rawBase64;
@@ -117,6 +117,8 @@ window.inicializarChat = function() {
 
         Object.keys(data).forEach(key => {
             const msg = data[key];
+            console.log("📥 Mensaje leído de DB:", { autor: msg.autor, tieneMultimedia: !!msg.multimedia, largoMedia: msg.multimedia ? msg.multimedia.length : 0 });
+
             const autor = escaparHTML(msg.autor || 'Anónimo');
             const texto = escaparHTML(msg.texto || '');
             const esMio = (msg.autor === usuarioActual);
@@ -126,8 +128,8 @@ window.inicializarChat = function() {
             let multimediaHTML = '';
             if (msg.multimedia) {
                 multimediaHTML = `
-                    <div style="margin: 8px 0; border-radius: 6px; overflow: hidden; border: 2px solid #00f3ff; background: #111; max-width: 220px;">
-                        <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Foto tribuna" style="width: 100%; height: auto; display: block; margin: 0 auto; cursor: pointer;" onload="console.log('✅ IMAGEN CARGADA CORRECTAMENTE EN DOM')" onerror="console.error('❌ ERROR: LA ETIQUETA IMG NO PUDO RENDERIZAR EL BASE64'); this.style.border='4px solid red';" loading="lazy">
+                    <div style="margin: 8px 0; border-radius: 6px; overflow: hidden; border: 2px solid #00f3ff; background: #000; max-width: 200px;">
+                        <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Foto tribuna" style="width: 100%; height: auto; display: block; cursor: pointer;" onload="console.log('✅ IMAGEN RENDERIZADA EXITOSAMENTE')" onerror="console.error('❌ ERROR AL PINTAR BASE64 EN ETIQUETA IMG')" loading="lazy">
                     </div>
                 `;
             } else if (texto.includes('youtube.com') || texto.includes('youtu.be')) {
