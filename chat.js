@@ -1,19 +1,44 @@
 // ==========================================
-// CHAT.JS - MÓDULO CON DIAGNÓSTICO DE FOTOS (v2.2)
+// CHAT.JS - MÓDULO BLINDADO GLOBAL (v2.3)
 // ==========================================
 
 let imagenChatTemporal = null;
 
-window.inicializarChat = function() {
-    console.log("💬 [CHAT] Inicializando módulo de chat...");
-    const mensajesLista = document.getElementById('mensajes-lista');
-    if (!mensajesLista) {
-        console.warn("⚠️ [CHAT] No se encontró el contenedor 'mensajes-lista'.");
-        return;
+// Inicializar listeners globales al cargar el DOM para que nunca fallen
+document.addEventListener('DOMContentLoaded', () => {
+    configurarInputsChatGlobales();
+});
+
+function configurarInputsChatGlobales() {
+    const inputGaleria = document.getElementById('input-foto-galeria');
+    if (inputGaleria) {
+        inputGaleria.addEventListener('change', prepararImagenChat);
     }
 
+    const inputCam = document.getElementById('input-foto-cam');
+    if (inputCam) {
+        inputCam.addEventListener('change', prepararImagenChat);
+    }
+
+    const btnEnviar = document.getElementById('btn-enviar-msg');
+    if (btnEnviar) {
+        btnEnviar.addEventListener('click', enviarMensajeChat);
+    }
+
+    const inputTexto = document.getElementById('chat-in');
+    if (inputTexto) {
+        inputTexto.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') enviarMensajeChat();
+        });
+    }
+}
+
+window.inicializarChat = function() {
+    const mensajesLista = document.getElementById('mensajes-lista');
+    if (!mensajesLista) return;
+
     if (typeof firebase === 'undefined') {
-        console.error('❌ [CHAT] Firebase no está disponible.');
+        console.error('Firebase no está disponible.');
         return;
     }
 
@@ -80,55 +105,17 @@ window.inicializarChat = function() {
             });
         });
     });
-
-    // Conectar inputs de fotos
-    const inputGaleria = document.getElementById('input-foto-galeria');
-    if (inputGaleria && !inputGaleria.dataset.listenerConfigured) {
-        inputGaleria.dataset.listenerConfigured = "true";
-        inputGaleria.addEventListener('change', prepararImagenChat);
-        console.log("📸 [CHAT] Listener conectado a 'input-foto-galeria'");
-    }
-
-    const inputCam = document.getElementById('input-foto-cam');
-    if (inputCam && !inputCam.dataset.listenerConfigured) {
-        inputCam.dataset.listenerConfigured = "true";
-        inputCam.addEventListener('change', prepararImagenChat);
-        console.log("📸 [CHAT] Listener conectado a 'input-foto-cam'");
-    }
-
-    // Conectar botón enviar
-    const btnEnviar = document.getElementById('btn-enviar-msg');
-    if (btnEnviar && !btnEnviar.dataset.listenerConfigured) {
-        btnEnviar.dataset.listenerConfigured = "true";
-        btnEnviar.addEventListener('click', enviarMensajeChat);
-    }
-
-    const inputTexto = document.getElementById('chat-in');
-    if (inputTexto && !inputTexto.dataset.listenerConfigured) {
-        inputTexto.dataset.listenerConfigured = "true";
-        inputTexto.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') enviarMensajeChat();
-        });
-    }
 };
 
 function prepararImagenChat(event) {
-    console.log("🖼️ [CHAT] Archivo de imagen seleccionado...");
     const file = event.target.files[0];
-    if (!file) {
-        console.warn("⚠️ [CHAT] No se seleccionó ningún archivo.");
-        return;
-    }
-    if (!file.type.startsWith('image/')) {
-        console.warn("⚠️ [CHAT] El archivo seleccionado no es una imagen válida:", file.type);
-        return;
-    }
-
+    if (!file) return;
+    
+    // Si seleccionaron un video o imagen, procesamos
     const reader = new FileReader();
     reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-            console.log("📐 [CHAT] Imagen cargada en memoria. Redimensionando con canvas...");
             const canvas = document.createElement('canvas');
             const MAX = 900;
             let w = img.width, h = img.height;
@@ -139,8 +126,6 @@ function prepararImagenChat(event) {
             canvas.getContext('2d').drawImage(img, 0, 0, w, h);
             
             imagenChatTemporal = canvas.toDataURL('image/jpeg', 0.80);
-            console.log("✅ [CHAT] Imagen comprimida con éxito. Enviando automáticamente a Firebase...");
-            
             enviarMensajeChat();
         };
         img.src = e.target.result;
@@ -152,10 +137,7 @@ window.enviarMensajeChat = function() {
     const inputTexto = document.getElementById('chat-in');
     const texto = inputTexto ? inputTexto.value.trim() : '';
 
-    if (!texto && !imagenChatTemporal) {
-        console.warn("⚠️ [CHAT] Intento de enviar mensaje vacío.");
-        return;
-    }
+    if (!texto && !imagenChatTemporal) return;
     if (typeof firebase === 'undefined') return;
 
     const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
@@ -166,14 +148,11 @@ window.enviarMensajeChat = function() {
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
 
-    console.log("🚀 [CHAT] Enviando mensaje a Firebase...", nuevoMensaje);
-
     const btnEnviar = document.getElementById('btn-enviar-msg');
     if (btnEnviar) btnEnviar.disabled = true;
 
     firebase.database().ref('mensajes').push(nuevoMensaje)
         .then(() => {
-            console.log("🎉 [CHAT] ¡Mensaje enviado con éxito a Firebase!");
             if (inputTexto) inputTexto.value = '';
             imagenChatTemporal = null;
             
@@ -183,8 +162,8 @@ window.enviarMensajeChat = function() {
             if (inputCam) inputCam.value = '';
         })
         .catch(err => {
-            console.error("❌ [CHAT] Error al enviar mensaje a Firebase:", err);
-            alert("No se pudo enviar el mensaje: " + err.message);
+            console.error("Error al enviar mensaje:", err);
+            alert("No se pudo enviar el mensaje.");
         })
         .finally(() => {
             if (btnEnviar) btnEnviar.disabled = false;
