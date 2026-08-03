@@ -1,9 +1,9 @@
 // ==========================================
-// CHAT.JS - MOTOR TÁCTIL DIRECTO (v4.6)
+// CHAT.JS - MOTOR CON DIAGNÓSTICO VISIBLE (v4.7)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 CHAT.JS CARGADO (MODO TÁCTIL DIRECTO)");
+    console.log("🚀 CHAT.JS CARGADO (MODO DIAGNÓSTICO)");
     configurarInputsChatGlobales();
 });
 
@@ -37,14 +37,20 @@ function configurarInputsChatGlobales() {
 
 function procesarArchivoDirecto(event) {
     const file = event.target.files ? event.target.files[0] : null;
-    if (!file) return;
+    if (!file) {
+        alert("⚠️ No se seleccionó ningún archivo.");
+        return;
+    }
 
-    console.log("📂 Archivo detectado. Procesando...");
+    alert("📂 Archivo detectado: " + file.name + " (" + Math.round(file.size / 1024) + " KB)");
+
     const reader = new FileReader();
+    reader.onerror = () => alert("❌ Error al leer el archivo con FileReader.");
     reader.onload = (e) => {
         const rawBase64 = e.target.result;
         const img = new Image();
 
+        img.onerror = () => alert("❌ Error al cargar la imagen en memoria.");
         img.onload = () => {
             try {
                 const canvas = document.createElement('canvas');
@@ -70,9 +76,12 @@ function procesarArchivoDirecto(event) {
                 ctx.drawImage(img, 0, 0, width, height);
 
                 const base64Comprimido = canvas.toDataURL('image/jpeg', 0.60);
-                console.log("✅ Imagen comprimida. Subiendo a Firebase...");
+                alert("✅ Imagen comprimida con éxito. Subiendo a Firebase...");
 
-                if (typeof firebase === 'undefined') return;
+                if (typeof firebase === 'undefined') {
+                    alert("❌ Error crítico: Firebase no está disponible.");
+                    return;
+                }
 
                 const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
                 const nuevoMensaje = {
@@ -83,16 +92,15 @@ function procesarArchivoDirecto(event) {
 
                 firebase.database().ref('mensajes').push(nuevoMensaje)
                     .then(() => {
-                        console.log("🎉 ¡Foto enviada correctamente al chat!");
+                        alert("🎉 ¡Foto enviada y guardada en Firebase correctamente!");
                         event.target.value = ''; // Limpiar input
                     })
                     .catch(err => {
-                        console.error("Error al subir a Firebase:", err);
-                        alert("Error al enviar foto: " + err.message);
+                        alert("❌ Error al subir a Firebase: " + err.message);
                     });
 
             } catch (err) {
-                console.error("Error en compresión:", err);
+                alert("❌ Error en el proceso de canvas: " + err.message);
             }
         };
         img.src = rawBase64;
