@@ -1,11 +1,9 @@
 // ==========================================
-// CHAT.JS - MOTOR BLINDADO CON MICRO-COMPRESIÓN (v4.0)
+// CHAT.JS - MOTOR BLINDADO CON ENVÍO AUTOMÁTICO (v4.1)
 // ==========================================
 
-let multimediaChatTemporal = null;
-
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 CHAT.JS CARGADO CORRECTAMENTE (MODO MICRO-COMPRESIÓN)");
+    console.log("🚀 CHAT.JS CARGADO CORRECTAMENTE (MODO ENVÍO AUTOMÁTICO)");
     configurarInputsChatGlobales();
 });
 
@@ -27,16 +25,6 @@ function configurarInputsChatGlobales() {
             prepararArchivoChat(e);
         }, true);
     }
-
-    window.addEventListener('focus', () => {
-        if (!multimediaChatTemporal) {
-            if (inputCam && inputCam.files && inputCam.files[0]) {
-                prepararArchivoChat({ target: inputCam });
-            } else if (inputGaleria && inputGaleria.files && inputGaleria.files[0]) {
-                prepararArchivoChat({ target: inputGaleria });
-            }
-        }
-    });
 
     const btnEnviar = document.getElementById('btn-enviar-msg');
     if (btnEnviar && !btnEnviar.dataset.listenerConfigured) {
@@ -136,7 +124,7 @@ function prepararArchivoChat(event) {
     const file = event.target.files ? event.target.files[0] : null;
     if (!file) return;
 
-    console.log("📂 Comprimiendo imagen localmente a ultra-bajo peso...");
+    console.log("📂 Comprimiendo y enviando imagen automáticamente...");
     const inputTexto = document.getElementById('chat-in');
 
     const reader = new FileReader();
@@ -168,23 +156,42 @@ function prepararArchivoChat(event) {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // Calidad 0.60 para peso ultra ligero
-                multimediaChatTemporal = canvas.toDataURL('image/jpeg', 0.60);
-                console.log("✅ Imagen comprimida con éxito.");
+                const base64Comprimido = canvas.toDataURL('image/jpeg', 0.60);
+                console.log("✅ Imagen comprimida. Subiendo automáticamente...");
 
-                if (inputTexto) {
-                    // Ahora sí forzamos el texto en el valor para que el usuario sepa que está lista
-                    inputTexto.value = "[📷 Foto lista]";
-                    inputTexto.focus();
-                }
+                if (typeof firebase === 'undefined') return;
+
+                const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
+                const nuevoMensaje = {
+                    autor: autor,
+                    multimedia: base64Comprimido,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                firebase.database().ref('mensajes').push(nuevoMensaje)
+                    .then(() => {
+                        console.log("¡Foto enviada con éxito al chat!");
+                        if (inputTexto) {
+                            inputTexto.value = '';
+                            inputTexto.placeholder = "Escribe un mensaje...";
+                        }
+                        const inputGaleria = document.getElementById('input-foto-galeria');
+                        if (inputGaleria) inputGaleria.value = '';
+                        const inputCam = document.getElementById('input-foto-cam');
+                        if (inputCam) inputCam.value = '';
+                    })
+                    .catch(err => {
+                        console.error("Error al enviar foto:", err);
+                        alert("Error al enviar foto: " + err.message);
+                    });
+
             } catch (err) {
                 console.error("Error al comprimir:", err);
-                multimediaChatTemporal = rawBase64;
             }
         };
 
         img.onerror = () => {
-            multimediaChatTemporal = rawBase64;
+            console.error("Error al cargar la imagen.");
         };
 
         img.src = rawBase64;
@@ -195,54 +202,31 @@ function prepararArchivoChat(event) {
 
 window.enviarMensajeChat = function() {
     const inputTexto = document.getElementById('chat-in');
-    let texto = inputTexto ? inputTexto.value.trim() : '';
+    const texto = inputTexto ? inputTexto.value.trim() : '';
 
-    // Limpiamos el texto si solo es la etiqueta de foto
-    if (texto === '[📷 Foto lista]') {
-        texto = '';
-    } else if (texto.startsWith('[📷 Foto lista]')) {
-        texto = texto.replace('[📷 Foto lista]', '').trim();
-    }
-
-    if (!texto && !multimediaChatTemporal) return;
+    if (!texto) return;
     if (typeof firebase === 'undefined') return;
 
     const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
     
-    // === CONSTRUCCIÓN LIMPIA DEL OBJETO ===
-    // Evitamos enviar strings vacíos que bloquean Firebase
     const nuevoMensaje = {
         autor: autor,
+        texto: texto,
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
-
-    if (texto !== '') {
-        nuevoMensaje.texto = texto;
-    }
-    
-    if (multimediaChatTemporal !== null) {
-        nuevoMensaje.multimedia = multimediaChatTemporal;
-    }
 
     const btnEnviar = document.getElementById('btn-enviar-msg');
     if (btnEnviar) btnEnviar.disabled = true;
 
     firebase.database().ref('mensajes').push(nuevoMensaje)
         .then(() => {
-            console.log("¡Mensaje/Foto enviado correctamente!");
             if (inputTexto) {
                 inputTexto.value = '';
                 inputTexto.placeholder = "Escribe un mensaje...";
             }
-            multimediaChatTemporal = null;
-            
-            const inputGaleria = document.getElementById('input-foto-galeria');
-            if (inputGaleria) inputGaleria.value = '';
-            const inputCam = document.getElementById('input-foto-cam');
-            if (inputCam) inputCam.value = '';
         })
         .catch(err => {
-            console.error("Error al enviar:", err);
+            console.error("Error al enviar texto:", err);
             alert("Error al enviar: " + err.message);
         })
         .finally(() => {
