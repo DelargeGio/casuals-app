@@ -1,5 +1,5 @@
 // ==========================================
-// CHAT.JS - MOTOR BLINDADO CON TIMEOUT Y FALLBACK (v3.4)
+// CHAT.JS - VERSIÓN DEFINITIVA Y PULIDA (v3.5)
 // ==========================================
 
 let multimediaChatTemporal = null;
@@ -74,7 +74,14 @@ window.inicializarChat = function() {
         Object.keys(data).forEach(key => {
             const msg = data[key];
             const autor = escaparHTML(msg.autor || 'Anónimo');
-            const texto = escaparHTML(msg.texto || '');
+            
+            // Filtro inteligente para ocultar texto basura o base64 viejo en las burbujas
+            let textoCrudo = msg.texto || '';
+            if (textoCrudo.includes('data:image') || textoCrudo.includes('<div') || textoCrudo.includes('base64')) {
+                textoCrudo = ''; 
+            }
+            const texto = escaparHTML(textoCrudo);
+
             const esMio = (msg.autor === usuarioActual);
             const claseAlineacion = esMio ? 'derecha' : 'izquierda';
             const tiempo = calcularTiempoChat(msg.timestamp);
@@ -147,11 +154,9 @@ function prepararArchivoChat(event) {
             const img = new Image();
             let finished = false;
 
-            // Timeout de seguridad: si el canvas se atora en Android, usa el base64 directo tras 3 segundos
             const safetyTimeout = setTimeout(() => {
                 if (!finished) {
                     finished = true;
-                    console.warn("⚠️ Canvas timeout en Android, usando respaldo seguro.");
                     multimediaChatTemporal = rawBase64;
                     if (inputTexto) {
                         inputTexto.placeholder = "[📷 Foto lista para enviar]";
@@ -189,9 +194,7 @@ function prepararArchivoChat(event) {
                     ctx.drawImage(img, 0, 0, width, height);
 
                     multimediaChatTemporal = canvas.toDataURL('image/jpeg', 0.70);
-                    console.log("✅ Imagen procesada y comprimida correctamente.");
                 } catch (err) {
-                    console.warn("⚠️ Error en canvas, usando base64 crudo:", err);
                     multimediaChatTemporal = rawBase64;
                 }
 
@@ -201,11 +204,10 @@ function prepararArchivoChat(event) {
                 }
             };
 
-            img.onerror = (err) => {
+            img.onerror = () => {
                 if (finished) return;
                 finished = true;
                 clearTimeout(safetyTimeout);
-                console.warn("⚠️ Error al cargar objeto Image, usando base64 crudo.");
                 multimediaChatTemporal = rawBase64;
                 if (inputTexto) {
                     inputTexto.placeholder = "[📷 Foto lista para enviar]";
@@ -221,11 +223,6 @@ function prepararArchivoChat(event) {
                 inputTexto.focus();
             }
         }
-    };
-
-    reader.onerror = (error) => {
-        console.error("❌ Error FileReader:", error);
-        alert("No se pudo leer el archivo.");
     };
 
     reader.readAsDataURL(file);
@@ -246,13 +243,11 @@ window.enviarMensajeChat = function() {
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
 
-    console.log("📤 Enviando mensaje a Firebase DB...");
     const btnEnviar = document.getElementById('btn-enviar-msg');
     if (btnEnviar) btnEnviar.disabled = true;
 
     firebase.database().ref('mensajes').push(nuevoMensaje)
         .then(() => {
-            console.log("🎉 Mensaje con archivo enviado exitosamente.");
             if (inputTexto) {
                 inputTexto.value = '';
                 inputTexto.placeholder = "Escribe un mensaje...";
@@ -265,8 +260,8 @@ window.enviarMensajeChat = function() {
             if (inputCam) inputCam.value = '';
         })
         .catch(err => {
-            console.error("❌ Error al enviar mensaje a Firebase:", err);
-            alert("No se pudo enviar el archivo: " + err.message);
+            console.error("Error al enviar:", err);
+            alert("No se pudo enviar el archivo.");
         })
         .finally(() => {
             if (btnEnviar) btnEnviar.disabled = false;
