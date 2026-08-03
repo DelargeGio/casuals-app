@@ -1,5 +1,5 @@
 // ==========================================
-// CHAT.JS - MOTOR BLINDADO CON MICRO-COMPRESIÓN (v3.8)
+// CHAT.JS - MOTOR BLINDADO CON MICRO-COMPRESIÓN (v4.0)
 // ==========================================
 
 let multimediaChatTemporal = null;
@@ -147,7 +147,7 @@ function prepararArchivoChat(event) {
         img.onload = () => {
             try {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 500; // Máximo 500px de ancho para garantizar peso mínimo
+                const MAX_WIDTH = 500; 
                 let width = img.width;
                 let height = img.height;
 
@@ -168,12 +168,13 @@ function prepararArchivoChat(event) {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // Calidad 0.60 comprimido en JPEG (pesará aprox 15-25 KB)
+                // Calidad 0.60 para peso ultra ligero
                 multimediaChatTemporal = canvas.toDataURL('image/jpeg', 0.60);
-                console.log("✅ Imagen comprimida con éxito. Lista para enviar.");
+                console.log("✅ Imagen comprimida con éxito.");
 
                 if (inputTexto) {
-                    inputTexto.placeholder = "[📷 Foto lista para enviar]";
+                    // Ahora sí forzamos el texto en el valor para que el usuario sepa que está lista
+                    inputTexto.value = "[📷 Foto lista]";
                     inputTexto.focus();
                 }
             } catch (err) {
@@ -194,24 +195,41 @@ function prepararArchivoChat(event) {
 
 window.enviarMensajeChat = function() {
     const inputTexto = document.getElementById('chat-in');
-    const texto = inputTexto ? inputTexto.value.trim() : '';
+    let texto = inputTexto ? inputTexto.value.trim() : '';
+
+    // Limpiamos el texto si solo es la etiqueta de foto
+    if (texto === '[📷 Foto lista]') {
+        texto = '';
+    } else if (texto.startsWith('[📷 Foto lista]')) {
+        texto = texto.replace('[📷 Foto lista]', '').trim();
+    }
 
     if (!texto && !multimediaChatTemporal) return;
     if (typeof firebase === 'undefined') return;
 
     const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
+    
+    // === CONSTRUCCIÓN LIMPIA DEL OBJETO ===
+    // Evitamos enviar strings vacíos que bloquean Firebase
     const nuevoMensaje = {
         autor: autor,
-        texto: texto.startsWith('[') ? '' : texto,
-        multimedia: multimediaChatTemporal || '',
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
+
+    if (texto !== '') {
+        nuevoMensaje.texto = texto;
+    }
+    
+    if (multimediaChatTemporal !== null) {
+        nuevoMensaje.multimedia = multimediaChatTemporal;
+    }
 
     const btnEnviar = document.getElementById('btn-enviar-msg');
     if (btnEnviar) btnEnviar.disabled = true;
 
     firebase.database().ref('mensajes').push(nuevoMensaje)
         .then(() => {
+            console.log("¡Mensaje/Foto enviado correctamente!");
             if (inputTexto) {
                 inputTexto.value = '';
                 inputTexto.placeholder = "Escribe un mensaje...";
@@ -225,7 +243,7 @@ window.enviarMensajeChat = function() {
         })
         .catch(err => {
             console.error("Error al enviar:", err);
-            alert("No se pudo enviar el mensaje.");
+            alert("Error al enviar: " + err.message);
         })
         .finally(() => {
             if (btnEnviar) btnEnviar.disabled = false;
