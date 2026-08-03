@@ -1,34 +1,45 @@
 // ==========================================
-// CHAT.JS - MOTOR DEFINITIVO NATIVO MÓVIL (v4.4)
+// CHAT.JS - MOTOR BLINDADO CON GESTOS DIRECTOS (v4.5)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 CHAT.JS CARGADO (MODO NATIVO DIRECTO)");
-    configurarInputsNativos();
+    console.log("🚀 CHAT.JS CARGADO (MODO GESTO DIRECTO)");
+    configurarInputsChatGlobales();
 });
 
-function configurarInputsNativos() {
-    const inputGaleria = document.getElementById('input-foto-galeria');
+function configurarInputsChatGlobales() {
+    const btnCam = document.getElementById('btn-trigger-cam');
     const inputCam = document.getElementById('input-foto-cam');
-
-    if (inputGaleria) {
-        inputGaleria.onchange = (e) => procesarArchivoDirecto(e);
+    if (btnCam && inputCam) {
+        btnCam.addEventListener('click', (e) => {
+            e.preventDefault();
+            inputCam.click(); // Disparo síncrono permitido por Android
+        });
+        inputCam.addEventListener('change', (e) => procesarArchivoDirecto(e));
     }
 
-    if (inputCam) {
-        inputCam.onchange = (e) => procesarArchivoDirecto(e);
+    const btnGaleria = document.getElementById('btn-trigger-galeria');
+    const inputGaleria = document.getElementById('input-foto-galeria');
+    if (btnGaleria && inputGaleria) {
+        btnGaleria.addEventListener('click', (e) => {
+            e.preventDefault();
+            inputGaleria.click();
+        });
+        inputGaleria.addEventListener('change', (e) => procesarArchivoDirecto(e));
     }
 
     const btnEnviar = document.getElementById('btn-enviar-msg');
-    if (btnEnviar) {
-        btnEnviar.onclick = () => enviarMensajeChat();
+    if (btnEnviar && !btnEnviar.dataset.listenerConfigured) {
+        btnEnviar.dataset.listenerConfigured = "true";
+        btnEnviar.addEventListener('click', () => enviarMensajeChat());
     }
 
     const inputTexto = document.getElementById('chat-in');
-    if (inputTexto) {
-        inputTexto.onkeypress = (e) => {
+    if (inputTexto && !inputTexto.dataset.listenerConfigured) {
+        inputTexto.dataset.listenerConfigured = "true";
+        inputTexto.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') enviarMensajeChat();
-        };
+        });
     }
 }
 
@@ -36,8 +47,7 @@ function procesarArchivoDirecto(event) {
     const file = event.target.files ? event.target.files[0] : null;
     if (!file) return;
 
-    console.log("📂 Archivo seleccionado directamente. Procesando...");
-    
+    console.log("📂 Procesando imagen capturada...");
     const reader = new FileReader();
     reader.onload = (e) => {
         const rawBase64 = e.target.result;
@@ -68,12 +78,9 @@ function procesarArchivoDirecto(event) {
                 ctx.drawImage(img, 0, 0, width, height);
 
                 const base64Comprimido = canvas.toDataURL('image/jpeg', 0.60);
-                console.log("✅ Compresión exitosa. Subiendo a Firebase...");
+                console.log("✅ Imagen comprimida. Subiendo a Firebase...");
 
-                if (typeof firebase === 'undefined') {
-                    alert("Error: Firebase no disponible");
-                    return;
-                }
+                if (typeof firebase === 'undefined') return;
 
                 const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
                 const nuevoMensaje = {
@@ -84,15 +91,16 @@ function procesarArchivoDirecto(event) {
 
                 firebase.database().ref('mensajes').push(nuevoMensaje)
                     .then(() => {
-                        console.log("🎉 ¡Foto enviada correctamente!");
-                        event.target.value = ''; // Limpiar
+                        console.log("🎉 ¡Foto enviada correctamente al chat!");
+                        event.target.value = ''; // Limpiar input
                     })
                     .catch(err => {
-                        alert("Error al subir a Firebase: " + err.message);
+                        console.error("Error al subir a Firebase:", err);
+                        alert("Error al enviar foto: " + err.message);
                     });
 
             } catch (err) {
-                alert("Error al comprimir imagen: " + err.message);
+                console.error("Error en compresión:", err);
             }
         };
         img.src = rawBase64;

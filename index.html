@@ -31,13 +31,12 @@
             }
             window.db = firebase.database();
             var db = window.db;
-            console.log("🔥 Firebase [INLINE] inicializado correctamente.");
         } catch (e) {
-            console.error("❌ Error al iniciar Firebase:", e);
+            console.error("Error al iniciar Firebase:", e);
         }
     </script>
     
-    <link rel="stylesheet" href="style.css?v=neon_definitivo_11">
+    <link rel="stylesheet" href="style.css?v=neon_definitivo_12">
 </head>
 <body class="vista-feed">
 
@@ -81,18 +80,16 @@
             <div id="mensajes-container">
                 <div id="mensajes-lista"></div>
                 
-                <div class="chat-input-container" style="position: relative;">
+                <div class="chat-input-container">
                     <input type="text" id="chat-in" placeholder="Escribe un mensaje...">
                     <button class="send-btn" id="btn-enviar-msg">➤</button>
                     <button id="btn-bengala-humo" class="smoke-btn">💨</button>
                     
-                    <label class="image-btn" style="cursor: pointer; position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;" title="Tomar Foto">
-                        📸<input type="file" id="input-foto-cam" accept="image/*" capture="environment" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;">
-                    </label>
+                    <button type="button" class="image-btn" id="btn-trigger-cam" title="Tomar Foto">📸</button>
+                    <input type="file" id="input-foto-cam" accept="image/*" capture="environment" style="display: none;">
 
-                    <label class="image-btn" style="cursor: pointer; position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;" title="Subir desde Galería">
-                        📁<input type="file" id="input-foto-galeria" accept="image/*,video/*" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;">
-                    </label>
+                    <button type="button" class="image-btn" id="btn-trigger-galeria" title="Subir desde Galería">📁</button>
+                    <input type="file" id="input-foto-galeria" accept="image/*,video/*" style="display: none;">
                 </div>
             </div>
         </div>
@@ -107,26 +104,21 @@
 
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>
-        try {
-            eruda.init();
-        } catch (err) {
-            console.log("Eruda omitida en entorno local.");
-        }
+        try { eruda.init(); } catch (err) {}
     </script>
 
-    <script src="login.js?v=11"></script>
-    <script src="multimedia.js?v=11"></script>
-    <script src="feeds.js?v=11"></script>
-    <script src="panic.js?v=11"></script>
-    <script src="push-notifications.js?v=11"></script>
-    <script src="script.js?v=11"></script>
+    <script src="login.js?v=12"></script>
+    <script src="multimedia.js?v=12"></script>
+    <script src="feeds.js?v=12"></script>
+    <script src="panic.js?v=12"></script>
+    <script src="push-notifications.js?v=12"></script>
+    <script src="script.js?v=12"></script>
+    <script src="chat.js?v=12"></script>
 
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('✅ SW principal registrado:', reg.scope))
-                    .catch(err => console.log('⚠️ SW principal no registrado:', err));
+                navigator.serviceWorker.register('sw.js').catch(() => {});
             });
         }
     </script>
