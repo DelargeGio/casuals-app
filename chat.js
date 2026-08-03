@@ -1,9 +1,9 @@
 // ==========================================
-// CHAT.JS - MOTOR CON DIAGNÓSTICO VISIBLE (v4.7)
+// CHAT.JS - RENDERIZADO VISIBLE DE IMÁGENES (v4.8)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 CHAT.JS CARGADO (MODO DIAGNÓSTICO)");
+    console.log("🚀 CHAT.JS CARGADO (MODO VISUALIZACIÓN FORZADA)");
     configurarInputsChatGlobales();
 });
 
@@ -37,20 +37,14 @@ function configurarInputsChatGlobales() {
 
 function procesarArchivoDirecto(event) {
     const file = event.target.files ? event.target.files[0] : null;
-    if (!file) {
-        alert("⚠️ No se seleccionó ningún archivo.");
-        return;
-    }
+    if (!file) return;
 
-    alert("📂 Archivo detectado: " + file.name + " (" + Math.round(file.size / 1024) + " KB)");
-
+    console.log("📂 Archivo detectado. Procesando...");
     const reader = new FileReader();
-    reader.onerror = () => alert("❌ Error al leer el archivo con FileReader.");
     reader.onload = (e) => {
         const rawBase64 = e.target.result;
         const img = new Image();
 
-        img.onerror = () => alert("❌ Error al cargar la imagen en memoria.");
         img.onload = () => {
             try {
                 const canvas = document.createElement('canvas');
@@ -76,12 +70,9 @@ function procesarArchivoDirecto(event) {
                 ctx.drawImage(img, 0, 0, width, height);
 
                 const base64Comprimido = canvas.toDataURL('image/jpeg', 0.60);
-                alert("✅ Imagen comprimida con éxito. Subiendo a Firebase...");
+                console.log("✅ Imagen comprimida. Subiendo a Firebase...");
 
-                if (typeof firebase === 'undefined') {
-                    alert("❌ Error crítico: Firebase no está disponible.");
-                    return;
-                }
+                if (typeof firebase === 'undefined') return;
 
                 const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
                 const nuevoMensaje = {
@@ -92,15 +83,16 @@ function procesarArchivoDirecto(event) {
 
                 firebase.database().ref('mensajes').push(nuevoMensaje)
                     .then(() => {
-                        alert("🎉 ¡Foto enviada y guardada en Firebase correctamente!");
+                        console.log("🎉 ¡Foto enviada correctamente al chat!");
                         event.target.value = ''; // Limpiar input
                     })
                     .catch(err => {
-                        alert("❌ Error al subir a Firebase: " + err.message);
+                        console.error("Error al subir a Firebase:", err);
+                        alert("Error al enviar foto: " + err.message);
                     });
 
             } catch (err) {
-                alert("❌ Error en el proceso de canvas: " + err.message);
+                console.error("Error en compresión:", err);
             }
         };
         img.src = rawBase64;
@@ -135,16 +127,16 @@ window.inicializarChat = function() {
             let multimediaHTML = '';
             if (msg.multimedia) {
                 multimediaHTML = `
-                    <div class="multimedia-box">
-                        <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Media tribuna" loading="lazy">
+                    <div style="margin-top: 6px; margin-bottom: 6px; border-radius: 4px; overflow: hidden; border: 1px solid #00f3ff;">
+                        <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Media tribuna" style="max-width: 100%; width: 220px; height: auto; display: block; cursor: pointer;" loading="lazy">
                     </div>
                 `;
             } else if (texto.includes('youtube.com') || texto.includes('youtu.be')) {
                 const embedUrl = convertirAEmbedYouTube(texto);
                 if (embedUrl) {
                     multimediaHTML = `
-                        <div class="multimedia-box">
-                            <iframe src="${embedUrl}" frameborder="0" allowfullscreen></iframe>
+                        <div style="margin-top: 6px; margin-bottom: 6px;">
+                            <iframe src="${embedUrl}" style="width: 100%; height: 160px; border: none;" allowfullscreen></iframe>
                         </div>
                     `;
                 }
