@@ -1,8 +1,9 @@
 // ==========================================
-// CHAT.JS - ZOOM DELEGADO ULTRA ESTABLE
+// CHAT.JS - BLINDAJE TOTAL (ANTITRIPLE ENVÍO Y NEÓN SAMSUNG)
 // ==========================================
 
 let chatCargadoInicialmente = false;
+let enviandoLock = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     configurarInputsChatSeparado();
@@ -134,7 +135,6 @@ function inicializarDelegacionZoomGeneral() {
     if (!mensajesLista || mensajesLista.dataset.zoomDelegated) return;
     mensajesLista.dataset.zoomDelegated = "true";
 
-    // Un solo listener global en el contenedor que atrapa cualquier clic o toque en imágenes del chat
     mensajesLista.addEventListener('click', (e) => {
         const imgTarget = e.target.closest('.chat-img-zoom');
         if (imgTarget) {
@@ -150,6 +150,10 @@ function construirHTML(msg, id) {
     const usuarioActual = localStorage.getItem('usuario_nombre') || '';
     const autor = window.escaparHTML ? window.escaparHTML(msg.autor || 'Anónimo') : (msg.autor || 'Anónimo');
     const colorInfo = (window.COLORES_USUARIOS && window.COLORES_USUARIOS[msg.autor]) || { color: "#4da6ff", sombra: "0 0 8px #4da6ff" };
+    
+    // Forzar sombra neón compatible con todos los navegadores móviles (Samsung e In-App)
+    const sombraCSS = colorInfo.sombra || `0 0 8px ${colorInfo.color}`;
+
     const esMio = (msg.autor === usuarioActual);
     const claseAlineacion = esMio ? 'derecha' : 'izquierda';
     
@@ -171,7 +175,7 @@ function construirHTML(msg, id) {
     return `
         <div id="msg-${id}" class="mensaje-wrapper ${claseAlineacion}">
             <div class="burbuja-industrial">
-                <span class="autor-tag" style="color:${colorInfo.color} !important; text-shadow:${colorInfo.sombra};">${autor}</span>
+                <span class="autor-tag" style="color:${colorInfo.color} !important; text-shadow:${sombraCSS} !important;">${autor}</span>
                 ${textoHTML}
                 ${multimediaHTML}
                 <span class="mensaje-tiempo">${tiempo}</span>
@@ -200,10 +204,12 @@ window.abrirVisorImagen = function(url) {
 };
 
 function enviarTexto() {
+    if (enviandoLock) return;
     const input = document.getElementById('chat-in');
     const texto = input ? input.value.trim() : '';
     if (!texto || typeof firebase === 'undefined') return;
 
+    enviandoLock = true;
     const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
     if (window.reproducirSonidoMessenger) window.reproducirSonidoMessenger();
 
@@ -213,5 +219,9 @@ function enviarTexto() {
         timestamp: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
         if (input) input.value = '';
+        setTimeout(() => { enviandoLock = false; }, 500);
+    }).catch(err => {
+        console.error("Error al enviar texto:", err);
+        enviandoLock = false;
     });
 }
