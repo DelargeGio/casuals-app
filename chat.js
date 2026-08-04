@@ -1,231 +1,185 @@
 // ==========================================
-// CHAT.JS - DEPURADOR DE DATOS Y MULTIMEDIA (v5.1)
+// CHAT.JS - CORRECCIÓN DIRECTA DE ENVÍO Y ZOOM
 // ==========================================
 
+let chatCargadoInicialmente = false;
+
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 CHAT.JS CARGADO (VERSIÓN 5.1 - DEPURACIÓN)");
-    configurarInputsChatGlobales();
+    configurarInputsChatSeparado();
+    if (typeof window.inicializarChat === 'function') {
+        window.inicializarChat();
+    }
 });
 
-function configurarInputsChatGlobales() {
-    const inputCam = document.getElementById('input-foto-cam');
-    if (inputCam && !inputCam.dataset.listenerConfigured) {
-        inputCam.dataset.listenerConfigured = "true";
-        inputCam.addEventListener('change', (e) => procesarArchivoDirecto(e));
+function configurarInputsChatSeparado() {
+    const inputGaleria = document.getElementById('input-foto-galeria');
+    if (inputGaleria) {
+        inputGaleria.onchange = (e) => procesarYEnviarFoto(e);
     }
 
-    const inputGaleria = document.getElementById('input-foto-galeria');
-    if (inputGaleria && !inputGaleria.dataset.listenerConfigured) {
-        inputGaleria.dataset.listenerConfigured = "true";
-        inputGaleria.addEventListener('change', (e) => procesarArchivoDirecto(e));
+    const inputCam = document.getElementById('input-foto-cam');
+    if (inputCam) {
+        inputCam.onchange = (e) => procesarYEnviarFoto(e);
     }
 
     const btnEnviar = document.getElementById('btn-enviar-msg');
-    if (btnEnviar && !btnEnviar.dataset.listenerConfigured) {
-        btnEnviar.dataset.listenerConfigured = "true";
-        btnEnviar.addEventListener('click', () => enviarMensajeChat());
+    if (btnEnviar) {
+        btnEnviar.onclick = (e) => {
+            e.preventDefault();
+            enviarTexto();
+        };
     }
 
     const inputTexto = document.getElementById('chat-in');
-    if (inputTexto && !inputTexto.dataset.listenerConfigured) {
-        inputTexto.dataset.listenerConfigured = "true";
-        inputTexto.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') enviarMensajeChat();
-        });
+    if (inputTexto) {
+        inputTexto.onkeydown = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                enviarTexto();
+            }
+        };
     }
 }
 
-function procesarArchivoDirecto(event) {
+function procesarYEnviarFoto(event) {
     const file = event.target.files ? event.target.files[0] : null;
     if (!file) return;
 
-    console.log("📂 Archivo detectado. Procesando...");
     const reader = new FileReader();
     reader.onload = (e) => {
-        const rawBase64 = e.target.result;
         const img = new Image();
-
         img.onload = () => {
-            try {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 350; // Reducido para asegurar ligereza en la base de datos
-                let width = img.width;
-                let height = img.height;
-
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_WIDTH) {
-                        width *= MAX_WIDTH / height;
-                        height = MAX_WIDTH;
-                    }
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-
-                const base64Comprimido = canvas.toDataURL('image/jpeg', 0.45);
-                console.log("✅ Imagen comprimida. Tamaño Base64:", base64Comprimido.length);
-
-                if (typeof firebase === 'undefined') return;
-
-                const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
-                const nuevoMensaje = {
-                    autor: autor,
-                    multimedia: base64Comprimido,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                };
-
-                firebase.database().ref('mensajes').push(nuevoMensaje)
-                    .then(() => {
-                        console.log("🎉 ¡Foto enviada correctamente a Firebase!");
-                        event.target.value = ''; 
-                    })
-                    .catch(err => {
-                        console.error("❌ Error al subir a Firebase:", err);
-                    });
-
-            } catch (err) {
-                console.error("❌ Error en compresión:", err);
+            const canvas = document.createElement('canvas');
+            const MAX = 900;
+            let w = img.width, h = img.height;
+            if (w > h) {
+                if (w > MAX) { h *= MAX / w; w = MAX; }
+            } else {
+                if (h > MAX) { w *= MAX / h; h = MAX; }
             }
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const base64 = canvas.toDataURL('image/jpeg', 0.8);
+
+            if (typeof firebase === 'undefined') return;
+            const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
+            
+            firebase.database().ref('mensajes').push({
+                autor: autor,
+                multimedia: base64,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                event.target.value = '';
+            }).catch(err => console.error("Error al enviar foto:", err));
         };
-        img.src = rawBase64;
+        img.src = e.target.result;
     };
     reader.readAsDataURL(file);
 }
 
 window.inicializarChat = function() {
     const mensajesLista = document.getElementById('mensajes-lista');
-    if (!mensajesLista) return;
+    if (!mensajesLista || typeof firebase === 'undefined') return;
 
-    if (typeof firebase === 'undefined') return;
+    const chatRef = firebase.database().ref('mensajes').limitToLast(50);
+    chatRef.off();
+    mensajesLista.innerHTML = '';
+    chatCargadoInicialmente = false;
 
-    firebase.database().ref('mensajes').limitToLast(50).on('value', (snapshot) => {
+    chatRef.once('value', (snapshot) => {
         const data = snapshot.val();
         if (!data) {
             mensajesLista.innerHTML = `<div style="text-align:center; color:#00f3ff; margin-top:20px; font-family:monospace; font-size:0.75rem;">[SIN MENSAJES EN TRIBUNA]</div>`;
+            chatCargadoInicialmente = true;
             return;
         }
-
-        const usuarioActual = localStorage.getItem('usuario_nombre') || '';
-        let htmlMensajes = '';
-
+        let html = '';
         Object.keys(data).forEach(key => {
-            const msg = data[key];
-            console.log("📥 Mensaje leído de DB:", { autor: msg.autor, tieneMultimedia: !!msg.multimedia, largoMedia: msg.multimedia ? msg.multimedia.length : 0 });
-
-            const autor = escaparHTML(msg.autor || 'Anónimo');
-            const texto = escaparHTML(msg.texto || '');
-            const esMio = (msg.autor === usuarioActual);
-            const claseAlineacion = esMio ? 'derecha' : 'izquierda';
-            const tiempo = calcularTiempoChat(msg.timestamp);
-
-            let multimediaHTML = '';
-            if (msg.multimedia) {
-                multimediaHTML = `
-                    <div style="margin: 8px 0; border-radius: 6px; overflow: hidden; border: 2px solid #00f3ff; background: #000; max-width: 200px;">
-                        <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Foto tribuna" style="width: 100%; height: auto; display: block; cursor: pointer;" onload="console.log('✅ IMAGEN RENDERIZADA EXITOSAMENTE')" onerror="console.error('❌ ERROR AL PINTAR BASE64 EN ETIQUETA IMG')" loading="lazy">
-                    </div>
-                `;
-            } else if (texto.includes('youtube.com') || texto.includes('youtu.be')) {
-                const embedUrl = convertirAEmbedYouTube(texto);
-                if (embedUrl) {
-                    multimediaHTML = `
-                        <div style="margin-top: 6px; margin-bottom: 6px;">
-                            <iframe src="${embedUrl}" style="width: 100%; height: 160px; border: none;" allowfullscreen></iframe>
-                        </div>
-                    `;
-                }
-            }
-
-            htmlMensajes += `
-                <div class="mensaje-wrapper ${claseAlineacion}">
-                    <div class="burbuja-industrial">
-                        <span class="autor-tag">${autor}</span>
-                        ${texto ? `<p class="texto-mensaje">${texto}</p>` : ''}
-                        ${multimediaHTML}
-                        <span class="mensaje-tiempo">${tiempo}</span>
-                    </div>
-                </div>
-            `;
+            html += construirHTML(data[key], key);
         });
-
-        mensajesLista.innerHTML = htmlMensajes;
+        mensajesLista.innerHTML = html;
         mensajesLista.scrollTop = mensajesLista.scrollHeight;
+        chatCargadoInicialmente = true;
+        vincularZoom(mensajesLista);
+    });
 
-        mensajesLista.querySelectorAll('.chat-img-zoom').forEach(img => {
-            img.addEventListener('click', (e) => {
-                const url = e.currentTarget.getAttribute('data-url');
-                if (window.abrirVisorImagen) window.abrirVisorImagen(url);
-            });
-        });
+    chatRef.on('child_added', (snapshot) => {
+        if (!chatCargadoInicialmente) return;
+        const id = snapshot.key;
+        if (document.getElementById(`msg-${id}`)) return;
+
+        const msg = snapshot.val();
+        const div = document.createElement('div');
+        div.innerHTML = construirHTML(msg, id);
+
+        const estaAbajo = (mensajesLista.scrollHeight - mensajesLista.scrollTop - mensajesLista.clientHeight) < 120;
+        mensajesLista.appendChild(div.firstElementChild);
+        if (estaAbajo) mensajesLista.scrollTop = mensajesLista.scrollHeight;
+        vincularZoom(mensajesLista);
     });
 };
 
-window.enviarMensajeChat = function() {
-    const inputTexto = document.getElementById('chat-in');
-    const texto = inputTexto ? inputTexto.value.trim() : '';
+function construirHTML(msg, id) {
+    const usuarioActual = localStorage.getItem('usuario_nombre') || '';
+    const autor = window.escaparHTML ? window.escaparHTML(msg.autor || 'Anónimo') : (msg.autor || 'Anónimo');
+    const colorInfo = (window.COLORES_USUARIOS && window.COLORES_USUARIOS[msg.autor]) || { color: "#4da6ff", sombra: "0 0 8px #4da6ff" };
+    const esMio = (msg.autor === usuarioActual);
+    const claseAlineacion = esMio ? 'derecha' : 'izquierda';
+    
+    let multimediaHTML = '';
+    if (msg.multimedia) {
+        multimediaHTML = `
+            <div style="width: 100%; max-width: 260px; margin-top: 6px; border-radius: 6px; overflow: hidden; border: 1px solid var(--oro); background: #000;">
+                <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Media" style="width: 100%; height: auto; display: block; cursor: pointer;">
+            </div>
+        `;
+    }
 
-    if (!texto) return;
-    if (typeof firebase === 'undefined') return;
+    const textoHTML = (!msg.multimedia && msg.texto)
+        ? (window.procesarContenidoMensaje ? window.procesarContenidoMensaje(msg.texto) : `<p class="texto-mensaje">${msg.texto}</p>`)
+        : '';
+
+    const tiempo = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+    return `
+        <div id="msg-${id}" class="mensaje-wrapper ${claseAlineacion}">
+            <div class="burbuja-industrial">
+                <span class="autor-tag" style="color:${colorInfo.color} !important; text-shadow:${colorInfo.sombra};">${autor}</span>
+                ${textoHTML}
+                ${multimediaHTML}
+                <span class="mensaje-tiempo">${tiempo}</span>
+            </div>
+        </div>
+    `;
+}
+
+function vincularZoom(container) {
+    container.querySelectorAll('.chat-img-zoom').forEach(img => {
+        if (!img.dataset.zoomSet) {
+            img.dataset.zoomSet = "true";
+            img.onclick = (e) => {
+                const url = e.currentTarget.getAttribute('data-url');
+                if (window.abrirVisorImagen) window.abrirVisorImagen(url);
+            };
+        }
+    });
+}
+
+function enviarTexto() {
+    const input = document.getElementById('chat-in');
+    const texto = input ? input.value.trim() : '';
+    if (!texto || typeof firebase === 'undefined') return;
 
     const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
-    
-    const nuevoMensaje = {
+    if (window.reproducirSonidoMessenger) window.reproducirSonidoMessenger();
+
+    firebase.database().ref('mensajes').push({
         autor: autor,
         texto: texto,
         timestamp: firebase.database.ServerValue.TIMESTAMP
-    };
-
-    const btnEnviar = document.getElementById('btn-enviar-msg');
-    if (btnEnviar) btnEnviar.disabled = true;
-
-    firebase.database().ref('mensajes').push(nuevoMensaje)
-        .then(() => {
-            if (inputTexto) {
-                inputTexto.value = '';
-                inputTexto.placeholder = "Escribe un mensaje...";
-            }
-        })
-        .catch(err => {
-            console.error("Error al enviar texto:", err);
-        })
-        .finally(() => {
-            if (btnEnviar) btnEnviar.disabled = false;
-        });
-};
-
-function escaparHTML(str) {
-    if (!str) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
-function calcularTiempoChat(timestamp) {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function convertirAEmbedYouTube(url) {
-    try {
-        let videoId = '';
-        if (url.includes('youtu.be/')) {
-            videoId = url.split('youtu.be/')[1]?.split('?')[0];
-        } else if (url.includes('watch?v=')) {
-            videoId = url.split('watch?v=')[1]?.split('&')[0];
-        }
-        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-    } catch (e) {
-        return null;
-    }
+    }).then(() => {
+        if (input) input.value = '';
+    });
 }
