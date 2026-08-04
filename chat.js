@@ -1,5 +1,5 @@
 // ==========================================
-// CHAT.JS - CORRECCIÓN DE RENDERIZADO Y CANVAS
+// CHAT.JS - MOTOR OBJECTURL ULTRA ROBUSTO (FOTOS VISIBLES)
 // ==========================================
 
 let chatCargadoInicialmente = false;
@@ -45,49 +45,54 @@ function procesarYEnviarFoto(event) {
     const file = event.target.files ? event.target.files[0] : null;
     if (!file) return;
 
-    console.log("📂 Leyendo archivo real...");
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            let w = img.width;
-            let h = img.height;
-            const MAX = 1000;
-            
-            if (w > MAX || h > MAX) {
-                if (w > h) {
-                    h = Math.round(h * (MAX / w));
-                    w = MAX;
-                } else {
-                    w = Math.round(w * (MAX / h));
-                    h = MAX;
-                }
+    console.log("📂 Procesando archivo con ObjectURL...");
+    const objectURL = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+        URL.revokeObjectURL(objectURL);
+        const canvas = document.createElement('canvas');
+        let w = img.width;
+        let h = img.height;
+        const MAX = 1000;
+        
+        if (w > MAX || h > MAX) {
+            if (w > h) {
+                h = Math.round(h * (MAX / w));
+                w = MAX;
+            } else {
+                w = Math.round(w * (MAX / h));
+                h = MAX;
             }
+        }
 
-            canvas.width = w;
-            canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, w, h);
-            
-            const base64 = canvas.toDataURL('image/jpeg', 0.85);
-            console.log("✅ Base64 generado OK. Tamaño real:", base64.length);
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        
+        const base64 = canvas.toDataURL('image/jpeg', 0.85);
+        console.log("✅ Base64 real generado. Tamaño caracteres:", base64.length);
 
-            if (typeof firebase === 'undefined') return;
-            const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
-            
-            firebase.database().ref('mensajes').push({
-                autor: autor,
-                multimedia: base64,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                console.log("🚀 ¡Foto publicada en la tribuna!");
-                event.target.value = '';
-            }).catch(err => console.error("Error al enviar foto:", err));
-        };
-        img.src = e.target.result;
+        if (typeof firebase === 'undefined') return;
+        const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
+        
+        firebase.database().ref('mensajes').push({
+            autor: autor,
+            multimedia: base64,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            console.log("🚀 ¡Foto publicada con éxito en la tribuna!");
+            event.target.value = '';
+        }).catch(err => console.error("Error al enviar foto:", err));
     };
-    reader.readAsDataURL(file);
+
+    img.onerror = (err) => {
+        console.error("❌ Error al cargar la imagen:", err);
+        URL.revokeObjectURL(objectURL);
+    };
+
+    img.src = objectURL;
 }
 
 window.inicializarChat = function() {
