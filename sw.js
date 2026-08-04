@@ -1,4 +1,4 @@
-const CACHE_NAME = 'casuals-v3-hd';
+const CACHE_NAME = 'casuals-v4-hd';
 const urlsToCache = [
   './',
   './index.html',
@@ -11,7 +11,7 @@ const urlsToCache = [
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache).catch(err => console.log("Cache add error:", err)))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache).catch(err => console.log("Cache error:", err)))
   );
 });
 
@@ -30,9 +30,11 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  event.respondWith(
+  event.respondswidth ? event.respondWith(
     caches.match(event.request).then(response => {
       return response || fetch(event.request);
     })
+  ) : event.respondWith(
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
