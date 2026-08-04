@@ -1,5 +1,5 @@
 // ==========================================
-// CHAT.JS - BLINDAJE TOTAL (ANTITRIPLE ENVÍO Y NEÓN SAMSUNG)
+// CHAT.JS - PURGA DE EVENTOS FANTASMA Y CLONACIÓN
 // ==========================================
 
 let chatCargadoInicialmente = false;
@@ -24,16 +24,24 @@ function configurarInputsChatSeparado() {
         inputCam.onchange = (e) => procesarYEnviarFoto(e);
     }
 
-    const btnEnviar = document.getElementById('btn-enviar-msg');
-    if (btnEnviar) {
+    // PURGA TOTAL: Clonamos el botón de enviar para borrar cualquier evento oculto de script.js
+    const btnEnviarViejo = document.getElementById('btn-enviar-msg');
+    if (btnEnviarViejo) {
+        const btnEnviar = btnEnviarViejo.cloneNode(true);
+        btnEnviarViejo.parentNode.replaceChild(btnEnviar, btnEnviarViejo);
+        
         btnEnviar.onclick = (e) => {
             e.preventDefault();
             enviarTexto();
         };
     }
 
-    const inputTexto = document.getElementById('chat-in');
-    if (inputTexto) {
+    // Clonamos el input de texto para evitar duplicidad de eventos enter
+    const inputTextoViejo = document.getElementById('chat-in');
+    if (inputTextoViejo) {
+        const inputTexto = inputTextoViejo.cloneNode(true);
+        inputTextoViejo.parentNode.replaceChild(inputTexto, inputTextoViejo);
+        
         inputTexto.onkeydown = (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -150,8 +158,6 @@ function construirHTML(msg, id) {
     const usuarioActual = localStorage.getItem('usuario_nombre') || '';
     const autor = window.escaparHTML ? window.escaparHTML(msg.autor || 'Anónimo') : (msg.autor || 'Anónimo');
     const colorInfo = (window.COLORES_USUARIOS && window.COLORES_USUARIOS[msg.autor]) || { color: "#4da6ff", sombra: "0 0 8px #4da6ff" };
-    
-    // Forzar sombra neón compatible con todos los navegadores móviles (Samsung e In-App)
     const sombraCSS = colorInfo.sombra || `0 0 8px ${colorInfo.color}`;
 
     const esMio = (msg.autor === usuarioActual);
@@ -219,7 +225,7 @@ function enviarTexto() {
         timestamp: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
         if (input) input.value = '';
-        setTimeout(() => { enviandoLock = false; }, 500);
+        setTimeout(() => { enviandoLock = false; }, 800);
     }).catch(err => {
         console.error("Error al enviar texto:", err);
         enviandoLock = false;
