@@ -1,11 +1,12 @@
 // ==========================================
-// CHAT.JS - ZOOM ANTI-REBOTE BLINDADO
+// CHAT.JS - ZOOM DELEGADO ULTRA ESTABLE
 // ==========================================
 
 let chatCargadoInicialmente = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     configurarInputsChatSeparado();
+    inicializarDelegacionZoomGeneral();
     if (typeof window.inicializarChat === 'function') {
         window.inicializarChat();
     }
@@ -111,7 +112,6 @@ window.inicializarChat = function() {
         mensajesLista.innerHTML = html;
         mensajesLista.scrollTop = mensajesLista.scrollHeight;
         chatCargadoInicialmente = true;
-        vincularZoom(mensajesLista);
     });
 
     chatRef.on('child_added', (snapshot) => {
@@ -126,9 +126,25 @@ window.inicializarChat = function() {
         const estaAbajo = (mensajesLista.scrollHeight - mensajesLista.scrollTop - mensajesLista.clientHeight) < 120;
         mensajesLista.appendChild(div.firstElementChild);
         if (estaAbajo) mensajesLista.scrollTop = mensajesLista.scrollHeight;
-        vincularZoom(mensajesLista);
     });
 };
+
+function inicializarDelegacionZoomGeneral() {
+    const mensajesLista = document.getElementById('mensajes-lista');
+    if (!mensajesLista || mensajesLista.dataset.zoomDelegated) return;
+    mensajesLista.dataset.zoomDelegated = "true";
+
+    // Un solo listener global en el contenedor que atrapa cualquier clic o toque en imágenes del chat
+    mensajesLista.addEventListener('click', (e) => {
+        const imgTarget = e.target.closest('.chat-img-zoom');
+        if (imgTarget) {
+            e.preventDefault();
+            e.stopPropagation();
+            const url = imgTarget.getAttribute('data-url');
+            if (url) window.abrirVisorImagen(url);
+        }
+    });
+}
 
 function construirHTML(msg, id) {
     const usuarioActual = localStorage.getItem('usuario_nombre') || '';
@@ -162,36 +178,6 @@ function construirHTML(msg, id) {
             </div>
         </div>
     `;
-}
-
-function vincularZoom(container) {
-    container.querySelectorAll('.chat-img-zoom').forEach(img => {
-        if (!img.dataset.zoomSet) {
-            img.dataset.zoomSet = "true";
-            
-            let ultimoToque = 0;
-            img.addEventListener('touchend', (e) => {
-                const ahora = new Date().getTime();
-                if (ahora - ultimoToque < 500) return; // Evita doble disparo táctil
-                ultimoToque = ahora;
-                
-                e.preventDefault();
-                e.stopPropagation();
-                const url = e.currentTarget.getAttribute('data-url');
-                window.abrirVisorImagen(url);
-            }, { passive: false });
-
-            img.addEventListener('click', (e) => {
-                const ahora = new Date().getTime();
-                if (ahora - ultimoToque < 500) return; // Evita conflicto si ya se disparó el touchend
-                
-                e.preventDefault();
-                e.stopPropagation();
-                const url = e.currentTarget.getAttribute('data-url');
-                window.abrirVisorImagen(url);
-            });
-        }
-    });
 }
 
 window.abrirVisorImagen = function(url) {
