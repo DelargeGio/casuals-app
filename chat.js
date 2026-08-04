@@ -1,5 +1,5 @@
 // ==========================================
-// CHAT.JS - ZOOM UNIVERSAL BLINDADO (CHROME & SAMSUNG)
+// CHAT.JS - ZOOM ANTI-REBOTE BLINDADO
 // ==========================================
 
 let chatCargadoInicialmente = false;
@@ -168,15 +168,28 @@ function vincularZoom(container) {
     container.querySelectorAll('.chat-img-zoom').forEach(img => {
         if (!img.dataset.zoomSet) {
             img.dataset.zoomSet = "true";
-            // Escuchamos tanto click como touchend para garantizar respuesta inmediata en Chrome móvil
-            const abrirAccion = (e) => {
+            
+            let ultimoToque = 0;
+            img.addEventListener('touchend', (e) => {
+                const ahora = new Date().getTime();
+                if (ahora - ultimoToque < 500) return; // Evita doble disparo táctil
+                ultimoToque = ahora;
+                
                 e.preventDefault();
                 e.stopPropagation();
                 const url = e.currentTarget.getAttribute('data-url');
                 window.abrirVisorImagen(url);
-            };
-            img.onclick = abrirAccion;
-            img.ontouchend = abrirAccion;
+            }, { passive: false });
+
+            img.addEventListener('click', (e) => {
+                const ahora = new Date().getTime();
+                if (ahora - ultimoToque < 500) return; // Evita conflicto si ya se disparó el touchend
+                
+                e.preventDefault();
+                e.stopPropagation();
+                const url = e.currentTarget.getAttribute('data-url');
+                window.abrirVisorImagen(url);
+            });
         }
     });
 }
@@ -188,7 +201,11 @@ window.abrirVisorImagen = function(url) {
         visor.id = 'visor-imagen-nodal';
         visor.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:99999; display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none;';
         visor.innerHTML = `<img src="" style="max-width:95%; max-height:95%; object-fit:contain; border:2px solid var(--oro, #d4af37); border-radius:6px; box-shadow:0 0 25px rgba(0,0,0,0.9);">`;
-        visor.onclick = () => { visor.style.display = 'none'; };
+        
+        visor.onclick = (e) => {
+            e.preventDefault();
+            visor.style.display = 'none';
+        };
         document.body.appendChild(visor);
     }
     const imgModal = visor.querySelector('img');
