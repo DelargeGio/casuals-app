@@ -1,5 +1,5 @@
 // ==========================================
-// CHAT.JS - MOTOR OBJECTURL ULTRA ROBUSTO (FOTOS VISIBLES)
+// CHAT.JS - ZOOM UNIVERSAL BLINDADO (CHROME & SAMSUNG)
 // ==========================================
 
 let chatCargadoInicialmente = false;
@@ -45,7 +45,6 @@ function procesarYEnviarFoto(event) {
     const file = event.target.files ? event.target.files[0] : null;
     if (!file) return;
 
-    console.log("📂 Procesando archivo con ObjectURL...");
     const objectURL = URL.createObjectURL(file);
     const img = new Image();
 
@@ -72,7 +71,6 @@ function procesarYEnviarFoto(event) {
         ctx.drawImage(img, 0, 0, w, h);
         
         const base64 = canvas.toDataURL('image/jpeg', 0.85);
-        console.log("✅ Base64 real generado. Tamaño caracteres:", base64.length);
 
         if (typeof firebase === 'undefined') return;
         const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
@@ -82,16 +80,11 @@ function procesarYEnviarFoto(event) {
             multimedia: base64,
             timestamp: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
-            console.log("🚀 ¡Foto publicada con éxito en la tribuna!");
             event.target.value = '';
         }).catch(err => console.error("Error al enviar foto:", err));
     };
 
-    img.onerror = (err) => {
-        console.error("❌ Error al cargar la imagen:", err);
-        URL.revokeObjectURL(objectURL);
-    };
-
+    img.onerror = () => { URL.revokeObjectURL(objectURL); };
     img.src = objectURL;
 }
 
@@ -148,7 +141,7 @@ function construirHTML(msg, id) {
     if (msg.multimedia) {
         multimediaHTML = `
             <div style="width: 100%; max-width: 280px; margin-top: 6px; border-radius: 6px; overflow: hidden; border: 1px solid var(--oro); background: #000;">
-                <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Media" style="width: 100%; height: auto; display: block; cursor: pointer;">
+                <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Media" style="width: 100%; height: auto; display: block; cursor: pointer; touch-action: manipulation;">
             </div>
         `;
     }
@@ -175,13 +168,33 @@ function vincularZoom(container) {
     container.querySelectorAll('.chat-img-zoom').forEach(img => {
         if (!img.dataset.zoomSet) {
             img.dataset.zoomSet = "true";
-            img.onclick = (e) => {
+            // Escuchamos tanto click como touchend para garantizar respuesta inmediata en Chrome móvil
+            const abrirAccion = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const url = e.currentTarget.getAttribute('data-url');
-                if (window.abrirVisorImagen) window.abrirVisorImagen(url);
+                window.abrirVisorImagen(url);
             };
+            img.onclick = abrirAccion;
+            img.ontouchend = abrirAccion;
         }
     });
 }
+
+window.abrirVisorImagen = function(url) {
+    let visor = document.getElementById('visor-imagen-nodal');
+    if (!visor) {
+        visor = document.createElement('div');
+        visor.id = 'visor-imagen-nodal';
+        visor.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:99999; display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none;';
+        visor.innerHTML = `<img src="" style="max-width:95%; max-height:95%; object-fit:contain; border:2px solid var(--oro, #d4af37); border-radius:6px; box-shadow:0 0 25px rgba(0,0,0,0.9);">`;
+        visor.onclick = () => { visor.style.display = 'none'; };
+        document.body.appendChild(visor);
+    }
+    const imgModal = visor.querySelector('img');
+    if (imgModal) imgModal.src = url;
+    visor.style.display = 'flex';
+};
 
 function enviarTexto() {
     const input = document.getElementById('chat-in');
