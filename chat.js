@@ -1,17 +1,32 @@
 // ==========================================
-// CHAT.JS - BLOQUEO TOTAL DE FORMULARIOS Y EVENTOS FANTASMA
+// CHAT.JS - INTERCEPTOR GLOBAL DE FIREBASE (SOLUCIÓN DEFINITIVA)
 // ==========================================
 
 let chatCargadoInicialmente = false;
-let enviandoLock = false;
+
+// INTERCEPTOR GLOBAL NUCLEAR: Bloquea cualquier duplicado exacto en Firebase por 1 segundo
+if (typeof window.firebaseInterceptorsApplied === 'undefined' && typeof firebase !== 'undefined') {
+    window.firebaseInterceptorsApplied = true;
+    const originalPush = firebase.database.Reference.prototype.push;
+    let ultimoTextoEnviado = "";
+    let ultimaHoraEnvio = 0;
+
+    firebase.database.Reference.prototype.push = function(value, onComplete) {
+        if (this.toString().includes('mensajes') && value && value.texto) {
+            const ahora = Date.now();
+            if (value.texto === ultimoTextoEnviado && (ahora - ultimaHoraEnvio) < 1500) {
+                console.warn("🚫 Mensaje duplicado bloqueado por el interceptor global.");
+                // Retornamos una promesa vacía para que no rompa el código pero frene el envío fantasma
+                return Promise.resolve({ key: "duplicado-bloqueado" });
+            }
+            ultimoTextoEnviado = value.texto;
+            ultimaHoraEnvio = ahora;
+        }
+        return originalPush.call(this, value, onComplete);
+    };
+}
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Matar cualquier evento de submit en formularios para evitar disparos dobles del navegador
-    document.addEventListener('submit', (e) => {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-    }, true);
-
     configurarInputsChatSeparado();
     inicializarDelegacionZoomGeneral();
     if (typeof window.inicializarChat === 'function') {
@@ -32,26 +47,17 @@ function configurarInputsChatSeparado() {
 
     const btnEnviar = document.getElementById('btn-enviar-msg');
     if (btnEnviar) {
-        // Limpiamos reemplazando por clon limpio
-        const nuevoBtn = btnEnviar.cloneNode(true);
-        btnEnviar.parentNode.replaceChild(nuevoBtn, btnEnviar);
-        
-        nuevoBtn.onclick = (e) => {
+        btnEnviar.onclick = (e) => {
             e.preventDefault();
-            e.stopPropagation();
             enviarTexto();
         };
     }
 
     const inputTexto = document.getElementById('chat-in');
     if (inputTexto) {
-        const nuevoInput = inputTexto.cloneNode(true);
-        inputTexto.parentNode.replaceChild(nuevoInput, inputTexto);
-        
-        nuevoInput.onkeydown = (e) => {
+        inputTexto.onkeydown = (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                e.stopPropagation();
                 enviarTexto();
             }
         };
@@ -217,12 +223,10 @@ window.abrirVisorImagen = function(url) {
 };
 
 function enviarTexto() {
-    if (enviandoLock) return;
     const input = document.getElementById('chat-in');
     const texto = input ? input.value.trim() : '';
     if (!texto || typeof firebase === 'undefined') return;
 
-    enviandoLock = true;
     const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
     if (window.reproducirSonidoMessenger) window.reproducirSonidoMessenger();
 
@@ -232,9 +236,7 @@ function enviarTexto() {
         timestamp: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
         if (input) input.value = '';
-        setTimeout(() => { enviandoLock = false; }, 1000);
     }).catch(err => {
         console.error("Error al enviar texto:", err);
-        enviandoLock = false;
     });
 }
