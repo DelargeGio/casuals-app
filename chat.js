@@ -1,11 +1,17 @@
 // ==========================================
-// CHAT.JS - PURGA DE EVENTOS FANTASMA Y CLONACIÓN
+// CHAT.JS - BLOQUEO TOTAL DE FORMULARIOS Y EVENTOS FANTASMA
 // ==========================================
 
 let chatCargadoInicialmente = false;
 let enviandoLock = false;
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Matar cualquier evento de submit en formularios para evitar disparos dobles del navegador
+    document.addEventListener('submit', (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+    }, true);
+
     configurarInputsChatSeparado();
     inicializarDelegacionZoomGeneral();
     if (typeof window.inicializarChat === 'function') {
@@ -24,27 +30,28 @@ function configurarInputsChatSeparado() {
         inputCam.onchange = (e) => procesarYEnviarFoto(e);
     }
 
-    // PURGA TOTAL: Clonamos el botón de enviar para borrar cualquier evento oculto de script.js
-    const btnEnviarViejo = document.getElementById('btn-enviar-msg');
-    if (btnEnviarViejo) {
-        const btnEnviar = btnEnviarViejo.cloneNode(true);
-        btnEnviarViejo.parentNode.replaceChild(btnEnviar, btnEnviarViejo);
+    const btnEnviar = document.getElementById('btn-enviar-msg');
+    if (btnEnviar) {
+        // Limpiamos reemplazando por clon limpio
+        const nuevoBtn = btnEnviar.cloneNode(true);
+        btnEnviar.parentNode.replaceChild(nuevoBtn, btnEnviar);
         
-        btnEnviar.onclick = (e) => {
+        nuevoBtn.onclick = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             enviarTexto();
         };
     }
 
-    // Clonamos el input de texto para evitar duplicidad de eventos enter
-    const inputTextoViejo = document.getElementById('chat-in');
-    if (inputTextoViejo) {
-        const inputTexto = inputTextoViejo.cloneNode(true);
-        inputTextoViejo.parentNode.replaceChild(inputTexto, inputTextoViejo);
+    const inputTexto = document.getElementById('chat-in');
+    if (inputTexto) {
+        const nuevoInput = inputTexto.cloneNode(true);
+        inputTexto.parentNode.replaceChild(nuevoInput, inputTexto);
         
-        inputTexto.onkeydown = (e) => {
+        nuevoInput.onkeydown = (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
+                e.stopPropagation();
                 enviarTexto();
             }
         };
@@ -225,7 +232,7 @@ function enviarTexto() {
         timestamp: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
         if (input) input.value = '';
-        setTimeout(() => { enviandoLock = false; }, 800);
+        setTimeout(() => { enviandoLock = false; }, 1000);
     }).catch(err => {
         console.error("Error al enviar texto:", err);
         enviandoLock = false;
