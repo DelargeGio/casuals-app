@@ -1,5 +1,5 @@
 // ==========================================
-// CHAT.JS - CORRECCIÓN DIRECTA DE ENVÍO Y ZOOM
+// CHAT.JS - CORRECCIÓN DE RENDERIZADO Y CANVAS
 // ==========================================
 
 let chatCargadoInicialmente = false;
@@ -45,23 +45,33 @@ function procesarYEnviarFoto(event) {
     const file = event.target.files ? event.target.files[0] : null;
     if (!file) return;
 
+    console.log("📂 Leyendo archivo real...");
     const reader = new FileReader();
     reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
             const canvas = document.createElement('canvas');
-            const MAX = 900;
-            let w = img.width, h = img.height;
-            if (w > h) {
-                if (w > MAX) { h *= MAX / w; w = MAX; }
-            } else {
-                if (h > MAX) { w *= MAX / h; h = MAX; }
+            let w = img.width;
+            let h = img.height;
+            const MAX = 1000;
+            
+            if (w > MAX || h > MAX) {
+                if (w > h) {
+                    h = Math.round(h * (MAX / w));
+                    w = MAX;
+                } else {
+                    w = Math.round(w * (MAX / h));
+                    h = MAX;
+                }
             }
+
             canvas.width = w;
             canvas.height = h;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, w, h);
-            const base64 = canvas.toDataURL('image/jpeg', 0.8);
+            
+            const base64 = canvas.toDataURL('image/jpeg', 0.85);
+            console.log("✅ Base64 generado OK. Tamaño real:", base64.length);
 
             if (typeof firebase === 'undefined') return;
             const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
@@ -71,6 +81,7 @@ function procesarYEnviarFoto(event) {
                 multimedia: base64,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
+                console.log("🚀 ¡Foto publicada en la tribuna!");
                 event.target.value = '';
             }).catch(err => console.error("Error al enviar foto:", err));
         };
@@ -131,7 +142,7 @@ function construirHTML(msg, id) {
     let multimediaHTML = '';
     if (msg.multimedia) {
         multimediaHTML = `
-            <div style="width: 100%; max-width: 260px; margin-top: 6px; border-radius: 6px; overflow: hidden; border: 1px solid var(--oro); background: #000;">
+            <div style="width: 100%; max-width: 280px; margin-top: 6px; border-radius: 6px; overflow: hidden; border: 1px solid var(--oro); background: #000;">
                 <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Media" style="width: 100%; height: auto; display: block; cursor: pointer;">
             </div>
         `;
