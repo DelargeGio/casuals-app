@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CASUALS // PRIVATE</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
@@ -14,29 +14,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
     
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyAxvm2p6CzSOXJlR5m1JX-jWKkf_0S6oPc",
-            authDomain: "casuals-8-32a4d.firebaseapp.com",
-            databaseURL: "https://casuals-8-32a4d-default-rtdb.firebaseio.com/",
-            projectId: "casuals-8-32a4d",
-            storageBucket: "casuals-8-32a4d.firebasestorage.app",
-            messagingSenderId: "552015693448",
-            appId: "1:552015693448:web:e3cdb8df21007b5a27c13d"
-        };
-
-        try {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
-            }
-            window.db = firebase.database();
-            var db = window.db;
-        } catch (e) {
-            console.error("Error al iniciar Firebase:", e);
-        }
-    </script>
-    
-    <link rel="stylesheet" href="style.css?v=neon_definitivo_15">
+    <link rel="stylesheet" href="style.css?v=neon_definitivo_17">
 </head>
 <body class="vista-feed">
 
@@ -106,25 +84,53 @@
 
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>
-        try { eruda.init(); } catch (err) {}
+        window.CASUALS = window.CASUALS || {};
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyAxvm2p6CzSOXJlR5m1JX-jWKkf_0S6oPc",
+            authDomain: "casuals-8-32a4d.firebaseapp.com",
+            databaseURL: "https://casuals-8-32a4d-default-rtdb.firebaseio.com/",
+            projectId: "casuals-8-32a4d",
+            storageBucket: "casuals-8-32a4d.firebasestorage.app",
+            messagingSenderId: "552015693448",
+            appId: "1:552015693448:web:e3cdb8df21007b5a27c13d"
+        };
+
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            window.CASUALS.db = firebase.database();
+            window.db = window.CASUALS.db; 
+        } catch (e) {
+            console.error("Error crítico al iniciar Firebase:", e);
+        }
+    </script>
+    
+    <script>
+        if (window.location.search.includes('debug=true')) {
+            const erudaScript = document.createElement('script');
+            erudaScript.src = "https://cdn.jsdelivr.net/npm/eruda";
+            erudaScript.onload = () => eruda.init();
+            document.head.appendChild(erudaScript);
+        }
     </script>
 
-    <script src="login.js?v=15"></script>
-    <script src="multimedia.js?v=15"></script>
-    <script src="feeds.js?v=15"></script>
-    <script src="panic.js?v=15"></script>
-    <script src="push-notifications.js?v=15"></script>
-    <script src="script.js?v=15"></script>
-    <script src="chat.js?v=15"></script>
+    <script src="login.js?v=17"></script>
+    <script src="multimedia.js?v=17"></script>
+    <script src="feeds.js?v=17"></script>
+    <script src="panic.js?v=17"></script>
+    <script src="push-notifications.js?v=17"></script>
+    <script src="script.js?v=17"></script>
+    <script src="chat.js?v=17"></script>
 
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').then(reg => {
                     reg.update();
-                }).catch(() => {});
+                }).catch(err => console.log("SW error:", err));
             });
         }
     </script>
