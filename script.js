@@ -1,5 +1,5 @@
 // ==========================================
-// SCRIPT.JS - MOTOR GENERAL & CHAT UNIFICADO
+// SCRIPT.JS - MOTOR GENERAL & VISTAS
 // ==========================================
 
 const COLORES_USUARIOS = {
@@ -10,12 +10,6 @@ const COLORES_USUARIOS = {
     "GioDelarge 🤹🏽": { color: "#ff6600", sombra: "0 0 10px #ff6600" }
 };
 
-let enviandoBloqueado = false;
-let chatRefGeneral = null;
-
-// ==========================================
-// 1. UTILIDADES Y AUDIO
-// ==========================================
 window.reproducirSonidoMessenger = function() {
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -45,9 +39,6 @@ window.escaparHTML = function(str) {
     );
 };
 
-// ==========================================
-// 2. PROCESAMIENTO MULTIMEDIA
-// ==========================================
 window.procesarContenidoMensaje = function(texto) {
     if (!texto) return '';
     const textoEscapado = window.escaparHTML(texto);
@@ -75,110 +66,6 @@ window.procesarContenidoMensaje = function(texto) {
     return `<p class="texto-mensaje" style="word-break: break-word; white-space: pre-wrap;">${procesado}</p>`;
 };
 
-// ==========================================
-// 3. CONSTRUCTOR DE HTML PARA MENSAJES
-// ==========================================
-function construirHTMLMensaje(msg, id) {
-    const usuarioActual = localStorage.getItem("usuario_nombre") || "";
-    const autor = window.escaparHTML ? window.escaparHTML(msg.autor || 'Anónimo') : (msg.autor || 'Anónimo');
-    
-    const colorInfo = COLORES_USUARIOS[autor] || { color: "#4da6ff", sombra: "0 0 8px #4da6ff" };
-    const esMio = (autor === usuarioActual);
-    const claseAlineacion = esMio ? 'derecha' : 'izquierda';
-
-    let multimediaHTML = '';
-    if (msg.multimedia) {
-        multimediaHTML = `
-            <div style="width: 100%; max-width: 280px; margin-top: 6px; border-radius: 6px; overflow: hidden; border: 1px solid var(--oro); background: #000;">
-                <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Media" style="width: 100%; height: auto; display: block; cursor: pointer; touch-action: manipulation;">
-            </div>
-        `;
-    }
-
-    const textoHTML = (msg.multimedia && msg.texto) ? `<p class="texto-mensaje" style="word-break: break-word; white-space: pre-wrap;">${window.escaparHTML(msg.texto)}</p>` : (window.procesarContenidoMensaje ? window.procesarContenidoMensaje(msg.texto) : `<p>${msg.texto || ''}</p>`);
-    const tiempo = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (msg.tiempo || '');
-
-    return `
-        <div id="msg-${id}" class="mensaje-wrapper ${claseAlineacion}">
-            <div class="burbuja-industrial">
-                <span class="autor-tag" style="color: ${colorInfo.color} !important; text-shadow: ${colorInfo.sombra};">${autor}</span>
-                ${textoHTML}
-                ${multimediaHTML}
-                <span class="mensaje-tiempo">${tiempo}</span>
-            </div>
-        </div>
-    `;
-}
-
-// ==========================================
-// 4. CARGA DE MENSAJES (ÚNICO LISTENER)
-// ==========================================
-window.cargarMensajes = function() {
-    if (typeof firebase === 'undefined') return;
-    const mensajesLista = document.getElementById('mensajes-lista');
-    if (!mensajesLista) return;
-
-    if (chatRefGeneral) chatRefGeneral.off();
-    mensajesLista.innerHTML = '';
-    
-    chatRefGeneral = firebase.database().ref('mensajes').limitToLast(50);
-
-    chatRefGeneral.on('child_added', (snapshot) => {
-        const id = snapshot.key;
-        if (document.getElementById(`msg-${id}`)) return; 
-
-        const msg = snapshot.val();
-        if (!msg) return;
-
-        const divTemp = document.createElement('div');
-        divTemp.innerHTML = construirHTMLMensaje(msg, id);
-        
-        const elementoFinal = divTemp.firstElementChild;
-        if (!elementoFinal) return;
-
-        mensajesLista.appendChild(elementoFinal);
-        mensajesLista.scrollTop = mensajesLista.scrollHeight;
-    });
-};
-
-// ==========================================
-// 5. ENVÍO SEGURO Y ANTIVANDÁLICO
-// ==========================================
-window.enviarTextoForzado = function(texto) {
-    if (enviandoBloqueado || !texto || typeof firebase === 'undefined') return;
-    
-    enviandoBloqueado = true;
-    const autor = localStorage.getItem("usuario_nombre") || "Calavera ☠️";
-    const tiempo = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    window.reproducirSonidoMessenger();
-
-    firebase.database().ref('mensajes').push({
-        autor: autor,
-        texto: texto,
-        tiempo: tiempo,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    }).then(() => {
-        setTimeout(() => { enviandoBloqueado = false; }, 1200);
-    }).catch(err => {
-        console.error("Error al enviar mensaje:", err);
-        enviandoBloqueado = false;
-    });
-};
-
-window.enviarMensaje = function() {
-    const input = document.getElementById('chat-in');
-    if (!input) return;
-    const texto = input.value.trim();
-    if (!texto) return;
-
-    input.value = '';
-    window.enviarTextoForzado(texto);
-};
-
-// ==========================================
-// 6. GESTIÓN DE PRESENCIA Y VISTAS
-// ==========================================
 window.iniciarPresencia = function() {
     const usuario = localStorage.getItem("usuario_nombre");
     if (!usuario || typeof firebase === 'undefined') return;
@@ -240,34 +127,11 @@ window.renderView = function(vista) {
     }
 };
 
-// ==========================================
-// 7. INICIALIZACIÓN GENERAL DOM
-// ==========================================
 document.addEventListener("DOMContentLoaded", () => {
     const navFeed = document.getElementById("nav-feed");
     const navChat = document.getElementById("nav-chat");
     if (navFeed) navFeed.addEventListener("click", () => window.renderView("feed"));
     if (navChat) navChat.addEventListener("click", () => window.renderView("chat"));
-
-    const btnEnviar = document.getElementById("btn-enviar-msg");
-    if (btnEnviar) {
-        btnEnviar.onclick = (e) => {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            window.enviarMensaje();
-        };
-    }
-
-    const inputChat = document.getElementById("chat-in");
-    if (inputChat) {
-        inputChat.onkeydown = (e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                e.stopImmediatePropagation();
-                window.enviarMensaje();
-            }
-        };
-    }
 
     const btnPanic = document.getElementById("btn-panic-acab");
     if (btnPanic) {
@@ -287,6 +151,5 @@ document.addEventListener("DOMContentLoaded", () => {
         window.cargarFeed();
     }
     
-    window.cargarMensajes();
     window.iniciarPresencia();
 });
