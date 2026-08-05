@@ -63,9 +63,9 @@
                     <button class="send-btn" id="btn-enviar-msg">➤</button>
                     <button id="btn-bengala-humo" class="smoke-btn">💨</button>
                     
-                    <div id="btn-trigger-camara" style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; cursor: pointer;" title="Tomar Foto">
+                    <div style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; cursor: pointer;" title="Tomar Foto">
                         <span style="font-size: 1.2rem; pointer-events: none;">📸</span>
-                        <input type="file" id="input-foto-cam" accept="image/*" style="display: none;">
+                        <input type="file" id="input-foto-cam" accept="image/jpeg" capture="environment" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 5;">
                     </div>
 
                     <div style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; cursor: pointer;" title="Subir desde Galería">
@@ -82,15 +82,6 @@
             <button class="nav-btn" id="nav-salir" onclick="if(typeof cerrarSesion==='function')cerrarSesion();else localStorage.clear();window.location.reload();" style="color: var(--fuego); border-color: var(--fuego); touch-action: manipulation; cursor: pointer;">❌ SALIR</button>
         </nav>
 
-    </div>
-
-    <div id="modal-camara-hardware" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 99999; flex-direction: column; align-items: center; justify-content: center;">
-        <video id="video-camara-preview" autoplay playsinline style="width: 100%; height: 80vh; object-fit: cover;"></video>
-        <div style="height: 20vh; display: flex; align-items: center; justify-content: center; gap: 30px; width: 100%; background: #111;">
-            <button id="btn-capturar-hard" style="width: 65px; height: 65px; border-radius: 50%; background: #fff; border: 4px solid var(--oro); cursor: pointer; outline: none; box-shadow: 0 0 15px var(--oro);"></button>
-            <button id="btn-cerrar-hard" style="padding: 10px 20px; background: var(--fuego); color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-family: monospace;">CANCELAR</button>
-        </div>
-        <canvas id="canvas-camara-temp" style="display: none;"></canvas>
     </div>
 
     <script>
@@ -117,64 +108,6 @@
         }
     </script>
     
-    <script>
-        let streamCamaraActivo = null;
-
-        document.getElementById('btn-trigger-camara').addEventListener('click', async () => {
-            const modal = document.getElementById('modal-camara-hardware');
-            const video = document.getElementById('video-camara-preview');
-            modal.style.display = 'flex';
-
-            try {
-                streamCamaraActivo = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' },
-                    audio: false
-                });
-                video.srcObject = streamCamaraActivo;
-            } catch (err) {
-                alert("No se pudo acceder a la cámara: " + err.message);
-                modal.style.display = 'none';
-            }
-        });
-
-        document.getElementById('btn-cerrar-hard').addEventListener('click', () => {
-            cerrarCamaraHardware();
-        });
-
-        function cerrarCamaraHardware() {
-            const modal = document.getElementById('modal-camara-hardware');
-            modal.style.display = 'none';
-            if (streamCamaraActivo) {
-                streamCamaraActivo.getTracks().forEach(track => track.stop());
-                streamCamaraActivo = null;
-            }
-        }
-
-        document.getElementById('btn-capturar-hard').addEventListener('click', () => {
-            const video = document.getElementById('video-camara-preview');
-            const canvas = document.getElementById('canvas-camara-temp');
-            canvas.width = video.videoWidth || 1280;
-            canvas.height = video.videoHeight || 720;
-            
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            canvas.toBlob(blob => {
-                const archivo = new File([blob], "captura_camara.jpg", { type: "image/jpeg" });
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(archivo);
-                
-                const inputCam = document.getElementById('input-foto-cam');
-                inputCam.files = dataTransfer.files;
-                
-                // Dispara el evento change para que tu chat.js procese y envíe la foto automáticamente
-                inputCam.dispatchEvent(new Event('change', { bubbles: true }));
-                
-                cerrarCamaraHardware();
-            }, 'image/jpeg', 0.85);
-        });
-    </script>
-
     <script>
         if (window.location.search.includes('debug=true')) {
             const erudaScript = document.createElement('script');
