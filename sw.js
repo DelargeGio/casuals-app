@@ -30,11 +30,11 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  event.respondswidth ? event.respondWith(
+  event.respondWith(
     caches.match(event.request).then(response => {
       return response || fetch(event.request);
+    }).catch(() => {
+      console.log("Fallo de red, intentando servir desde caché...");
     })
-  ) : event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
   );
 });

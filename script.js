@@ -1,5 +1,5 @@
 // ==========================================
-// SCRIPT.JS - MOTOR GENERAL & CHAT ESTABLE
+// SCRIPT.JS - MOTOR GENERAL & CHAT UNIFICADO
 // ==========================================
 
 const COLORES_USUARIOS = {
@@ -10,6 +10,12 @@ const COLORES_USUARIOS = {
     "GioDelarge 🤹🏽": { color: "#ff6600", sombra: "0 0 10px #ff6600" }
 };
 
+let enviandoBloqueado = false;
+let chatRefGeneral = null;
+
+// ==========================================
+// 1. UTILIDADES Y AUDIO
+// ==========================================
 window.reproducirSonidoMessenger = function() {
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -32,29 +38,150 @@ window.reproducirSonidoMessenger = function() {
     }
 };
 
-window.renderView = function(vista) {
-    const body = document.body;
-    const navFeed = document.getElementById("nav-feed");
-    const navChat = document.getElementById("nav-chat");
-
-    if (vista === "feed") {
-        body.className = "vista-feed";
-        if (navFeed) navFeed.classList.add("active");
-        if (navChat) navChat.classList.remove("active");
-        if (typeof window.renderFeed === "function") window.renderFeed();
-    } else if (vista === "chat") {
-        body.className = "vista-chat";
-        if (navChat) navChat.classList.add("active");
-        if (navFeed) navFeed.classList.remove("active");
-        
-        const lista = document.getElementById('mensajes-lista');
-        if (lista) lista.scrollTop = lista.scrollHeight;
-    }
+window.escaparHTML = function(str) {
+    if (!str) return '';
+    return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
 };
 
+// ==========================================
+// 2. PROCESAMIENTO MULTIMEDIA
+// ==========================================
+window.procesarContenidoMensaje = function(texto) {
+    if (!texto) return '';
+    const textoEscapado = window.escaparHTML(texto);
+    
+    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
+    let procesado = textoEscapado.replace(youtubeRegex, (match, videoId) => {
+        return `<br><div class="multimedia-box"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%; height:200px; border-radius:4px; margin-top:5px;"></iframe></div>`;
+    });
+
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    procesado = procesado.replace(urlRegex, (url) => {
+        if (url.includes("youtube.com") || url.includes("youtu.be")) return url;
+
+        if (url.match(/\.(jpeg|jpg|gif|png|webp)(\?[^\s]*)?$/i)) {
+            return `<br><div class="multimedia-box"><a href="${url}" target="_blank"><img src="${url}" class="chat-img-zoom" data-url="${url}" alt="Imagen" style="width:100%; max-height:220px; object-fit:contain; border-radius:4px; margin-top:5px; cursor:pointer;"></a></div>`;
+        } else if (url.match(/\.(mp4|webm|ogg|mov)(\?[^\s]*)?$/i)) {
+            return `<br><div class="multimedia-box"><video controls playsinline preload="metadata" src="${url}" style="width:100%; max-height:220px; background:#000; border-radius:4px; margin-top:5px;"></video></div>`;
+        } else if (url.match(/\.(mp3|wav|ogg|m4a)(\?[^\s]*)?$/i)) {
+            return `<br><div class="multimedia-box" style="padding:5px;"><audio controls src="${url}" style="width:100%; margin-top:5px;"></audio></div>`;
+        }
+        
+        return `<a href="${url}" target="_blank" style="color: var(--neon-azul); text-decoration: underline; word-break: break-all;">${url}</a>`;
+    });
+
+    return `<p class="texto-mensaje" style="word-break: break-word; white-space: pre-wrap;">${procesado}</p>`;
+};
+
+// ==========================================
+// 3. CONSTRUCTOR DE HTML PARA MENSAJES
+// ==========================================
+function construirHTMLMensaje(msg, id) {
+    const usuarioActual = localStorage.getItem("usuario_nombre") || "";
+    const autor = window.escaparHTML ? window.escaparHTML(msg.autor || 'Anónimo') : (msg.autor || 'Anónimo');
+    
+    const colorInfo = COLORES_USUARIOS[autor] || { color: "#4da6ff", sombra: "0 0 8px #4da6ff" };
+    const esMio = (autor === usuarioActual);
+    const claseAlineacion = esMio ? 'derecha' : 'izquierda';
+
+    let multimediaHTML = '';
+    if (msg.multimedia) {
+        multimediaHTML = `
+            <div style="width: 100%; max-width: 280px; margin-top: 6px; border-radius: 6px; overflow: hidden; border: 1px solid var(--oro); background: #000;">
+                <img src="${msg.multimedia}" class="chat-img-zoom" data-url="${msg.multimedia}" alt="Media" style="width: 100%; height: auto; display: block; cursor: pointer; touch-action: manipulation;">
+            </div>
+        `;
+    }
+
+    const textoHTML = (msg.multimedia && msg.texto) ? `<p class="texto-mensaje" style="word-break: break-word; white-space: pre-wrap;">${window.escaparHTML(msg.texto)}</p>` : (window.procesarContenidoMensaje ? window.procesarContenidoMensaje(msg.texto) : `<p>${msg.texto || ''}</p>`);
+    const tiempo = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (msg.tiempo || '');
+
+    return `
+        <div id="msg-${id}" class="mensaje-wrapper ${claseAlineacion}">
+            <div class="burbuja-industrial">
+                <span class="autor-tag" style="color: ${colorInfo.color} !important; text-shadow: ${colorInfo.sombra};">${autor}</span>
+                ${textoHTML}
+                ${multimediaHTML}
+                <span class="mensaje-tiempo">${tiempo}</span>
+            </div>
+        </div>
+    `;
+}
+
+// ==========================================
+// 4. CARGA DE MENSAJES (ÚNICO LISTENER)
+// ==========================================
+window.cargarMensajes = function() {
+    if (typeof firebase === 'undefined') return;
+    const mensajesLista = document.getElementById('mensajes-lista');
+    if (!mensajesLista) return;
+
+    if (chatRefGeneral) chatRefGeneral.off();
+    mensajesLista.innerHTML = '';
+    
+    chatRefGeneral = firebase.database().ref('mensajes').limitToLast(50);
+
+    chatRefGeneral.on('child_added', (snapshot) => {
+        const id = snapshot.key;
+        if (document.getElementById(`msg-${id}`)) return; 
+
+        const msg = snapshot.val();
+        if (!msg) return;
+
+        const divTemp = document.createElement('div');
+        divTemp.innerHTML = construirHTMLMensaje(msg, id);
+        
+        const elementoFinal = divTemp.firstElementChild;
+        if (!elementoFinal) return;
+
+        mensajesLista.appendChild(elementoFinal);
+        mensajesLista.scrollTop = mensajesLista.scrollHeight;
+    });
+};
+
+// ==========================================
+// 5. ENVÍO SEGURO Y ANTIVANDÁLICO
+// ==========================================
+window.enviarTextoForzado = function(texto) {
+    if (enviandoBloqueado || !texto || typeof firebase === 'undefined') return;
+    
+    enviandoBloqueado = true;
+    const autor = localStorage.getItem("usuario_nombre") || "Calavera ☠️";
+    const tiempo = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    window.reproducirSonidoMessenger();
+
+    firebase.database().ref('mensajes').push({
+        autor: autor,
+        texto: texto,
+        tiempo: tiempo,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+        setTimeout(() => { enviandoBloqueado = false; }, 1200);
+    }).catch(err => {
+        console.error("Error al enviar mensaje:", err);
+        enviandoBloqueado = false;
+    });
+};
+
+window.enviarMensaje = function() {
+    const input = document.getElementById('chat-in');
+    if (!input) return;
+    const texto = input.value.trim();
+    if (!texto) return;
+
+    input.value = '';
+    window.enviarTextoForzado(texto);
+};
+
+// ==========================================
+// 6. GESTIÓN DE PRESENCIA Y VISTAS
+// ==========================================
 window.iniciarPresencia = function() {
     const usuario = localStorage.getItem("usuario_nombre");
-    if (!usuario) return;
+    if (!usuario || typeof firebase === 'undefined') return;
 
     const sanitizedUser = usuario.replace(/[.#$\/\[\]]/g, '_');
     const miConexionRef = firebase.database().ref('conectados/' + sanitizedUser);
@@ -93,132 +220,29 @@ window.iniciarPresencia = function() {
     });
 };
 
-window.procesarContenidoMensaje = function(texto) {
-    if (!texto) return '';
-    const textoEscapado = window.escaparHTML ? window.escaparHTML(texto) : texto;
-    
-    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
-    let procesado = textoEscapado.replace(youtubeRegex, (match, videoId) => {
-        return `<br><div class="multimedia-box"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%; height:200px; border-radius:4px; margin-top:5px;"></iframe></div>`;
-    });
+window.renderView = function(vista) {
+    const body = document.body;
+    const navFeed = document.getElementById("nav-feed");
+    const navChat = document.getElementById("nav-chat");
 
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    procesado = procesado.replace(urlRegex, (url) => {
-        if (url.includes("youtube.com") || url.includes("youtu.be")) return url;
-
-        if (url.match(/\.(jpeg|jpg|gif|png|webp)(\?[^\s]*)?$/i)) {
-            return `<br><div class="multimedia-box"><a href="${url}" target="_blank"><img src="${url}" alt="Imagen" style="width:100%; max-height:220px; object-fit:contain; border-radius:4px; margin-top:5px;"></a></div>`;
-        } else if (url.match(/\.(mp4|webm|ogg|mov)(\?[^\s]*)?$/i)) {
-            return `<br><div class="multimedia-box"><video controls playsinline preload="metadata" src="${url}" style="width:100%; max-height:220px; background:#000; border-radius:4px; margin-top:5px;"></video></div>`;
-        } else if (url.match(/\.(mp3|wav|ogg|m4a)(\?[^\s]*)?$/i)) {
-            return `<br><div class="multimedia-box" style="padding:5px;"><audio controls src="${url}" style="width:100%; margin-top:5px;"></audio></div>`;
-        }
+    if (vista === "feed") {
+        body.className = "vista-feed";
+        if (navFeed) navFeed.classList.add("active");
+        if (navChat) navChat.classList.remove("active");
+        if (typeof window.renderFeed === "function") window.renderFeed();
+    } else if (vista === "chat") {
+        body.className = "vista-chat";
+        if (navChat) navChat.classList.add("active");
+        if (navFeed) navFeed.classList.remove("active");
         
-        return `<a href="${url}" target="_blank" style="color: var(--neon-azul); text-decoration: underline; word-break: break-all;">${url}</a>`;
-    });
-
-    return `<p class="texto-mensaje" style="word-break: break-word; white-space: pre-wrap;">${procesado}</p>`;
-};
-
-let chatRefChatGeneral = null;
-window.cargarMensajes = function() {
-    if (typeof firebase === 'undefined') return;
-    const lista = document.getElementById('mensajes-lista');
-    if (!lista) return;
-
-    if (chatRefChatGeneral) chatRefChatGeneral.off();
-
-    chatRefChatGeneral = firebase.database().ref('mensajes').limitToLast(30);
-
-    chatRefChatGeneral.on('child_added', (snapshot) => {
-        const key = snapshot.key;
-        if (document.getElementById(`msg-firebase-${key}`)) return;
-
-        const msg = snapshot.val();
-        if (!msg) return;
-
-        const autor = msg.autor || 'Anónimo';
-        const texto = msg.texto || '';
-        const tiempo = msg.tiempo || '';
-        const esMia = autor === localStorage.getItem("usuario_nombre");
-
-        const div = document.createElement('div');
-        div.id = `msg-firebase-${key}`;
-        div.className = `mensaje-wrapper ${esMia ? 'derecha' : 'izquierda'}`;
-
-        let contenidoVisual = window.procesarContenidoMensaje ? window.procesarContenidoMensaje(texto) : `<p>${texto}</p>`;
-        const estiloAutor = COLORES_USUARIOS[autor] || { color: "#4da6ff", sombra: "0 0 8px #4da6ff" };
-
-        div.innerHTML = `
-            <div class="burbuja-industrial">
-                <span class="autor-tag" style="color: ${estiloAutor.color} !important; text-shadow: ${estiloAutor.sombra};">${autor}</span>
-                ${contenidoVisual}
-                <span class="mensaje-tiempo">${tiempo}</span>
-            </div>
-        `;
-
-        lista.appendChild(div);
-        lista.scrollTop = lista.scrollHeight;
-    });
-};
-
-window.escaparHTML = function(str) {
-    if (!str) return '';
-    return str.replace(/[&<>'"]/g, 
-        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-    );
-};
-
-window.enviarTextoForzado = function(texto) {
-    if (!texto) return;
-    const autor = localStorage.getItem("usuario_nombre") || "Anónimo";
-    const tiempo = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    window.reproducirSonidoMessenger();
-
-    const lista = document.getElementById('mensajes-lista');
-    if (lista) {
-        const placeholder = lista.querySelector('div[style*="text-align:center"]');
-        if (placeholder) placeholder.remove();
-
-        const div = document.createElement('div');
-        const esMia = autor === localStorage.getItem("usuario_nombre");
-        div.className = `mensaje-wrapper ${esMia ? 'derecha' : 'izquierda'}`;
-
-        const estiloAutor = COLORES_USUARIOS[autor] || { color: "#4da6ff", sombra: "0 0 8px #4da6ff" };
-        const contenido = window.procesarContenidoMensaje(texto);
-
-        div.innerHTML = `
-            <div class="burbuja-industrial">
-                <span class="autor-tag" style="color: ${estiloAutor.color} !important; text-shadow: ${estiloAutor.sombra};">${autor}</span>
-                ${contenido}
-                <span class="mensaje-tiempo">${tiempo}</span>
-            </div>
-        `;
-        lista.appendChild(div);
-        lista.scrollTop = lista.scrollHeight;
+        const lista = document.getElementById('mensajes-lista');
+        if (lista) lista.scrollTop = lista.scrollHeight;
     }
-
-    firebase.database().ref('mensajes').push({
-        autor: autor,
-        texto: texto,
-        tiempo: tiempo,
-        timestamp: Date.now()
-    }).catch(err => {
-        console.error("Error al enviar mensaje:", err);
-    });
 };
 
-window.enviarMensaje = function() {
-    const input = document.getElementById('chat-in');
-    if (!input) return;
-    const texto = input.value.trim();
-    if (!texto) return;
-
-    input.value = '';
-    window.enviarTextoForzado(texto);
-};
-
+// ==========================================
+// 7. INICIALIZACIÓN GENERAL DOM
+// ==========================================
 document.addEventListener("DOMContentLoaded", () => {
     const navFeed = document.getElementById("nav-feed");
     const navChat = document.getElementById("nav-chat");
@@ -226,12 +250,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (navChat) navChat.addEventListener("click", () => window.renderView("chat"));
 
     const btnEnviar = document.getElementById("btn-enviar-msg");
+    if (btnEnviar) {
+        btnEnviar.onclick = (e) => {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            window.enviarMensaje();
+        };
+    }
+
     const inputChat = document.getElementById("chat-in");
-    if (btnEnviar) btnEnviar.addEventListener("click", () => window.enviarMensaje());
     if (inputChat) {
-        inputChat.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") window.enviarMensaje();
-        });
+        inputChat.onkeydown = (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                window.enviarMensaje();
+            }
+        };
     }
 
     const btnPanic = document.getElementById("btn-panic-acab");
@@ -248,21 +283,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    const inputCam = document.getElementById("input-foto-cam");
-    if (inputCam) {
-        inputCam.addEventListener("change", (e) => {
-            if (typeof window.enviarArchivoLocal === "function") window.enviarArchivoLocal(e);
-        });
+    if (typeof window.cargarFeed === "function") {
+        window.cargarFeed();
     }
-
-    const inputGaleria = document.getElementById("input-foto-galeria");
-    if (inputGaleria) {
-        inputGaleria.addEventListener("change", (e) => {
-            if (typeof window.enviarArchivoLocal === "function") window.enviarArchivoLocal(e);
-        });
-    }
-
-    // Inicializar motores al arrancar la app
-    window.cargarFeed();
+    
     window.cargarMensajes();
+    window.iniciarPresencia();
 });
