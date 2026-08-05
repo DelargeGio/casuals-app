@@ -1,5 +1,5 @@
 // ==========================================
-// CHAT.JS - MÓDULO INDEPENDIENTE DE CHAT (CON MULTIMEDIA)
+// CHAT.JS - MÓDULO INDEPENDIENTE DE CHAT (BLINDADO)
 // ==========================================
 
 let chatEnviandoBloqueado = false;
@@ -69,15 +69,18 @@ window.enviarMensajeSeguro = function() {
     if (chatEnviandoBloqueado) return; // Candado anti-ráfaga
     
     const input = document.getElementById('chat-in');
-    // Ajusta el ID si tu input de archivo tiene otro nombre (ej. 'chat-archivo' o 'file-input')
-    const inputArchivo = document.getElementById('chat-archivo') || document.getElementById('file-input');
+    
+    // Búsqueda flexible de cualquier input de archivo en el HTML
+    const inputArchivo = document.getElementById('chat-archivo') || 
+                         document.getElementById('file-input') || 
+                         document.getElementById('input-archivo') || 
+                         document.querySelector('input[type="file"]');
     
     if (!input || typeof firebase === 'undefined') return;
     
     const texto = input.value.trim();
     const tieneArchivo = inputArchivo && inputArchivo.files && inputArchivo.files[0];
 
-    // Si no hay texto ni foto seleccionada, no hacemos nada
     if (!texto && !tieneArchivo) return;
 
     chatEnviandoBloqueado = true;
@@ -100,18 +103,31 @@ window.enviarMensajeSeguro = function() {
             if (inputArchivo) inputArchivo.value = '';
             setTimeout(() => { chatEnviandoBloqueado = false; }, 1200);
         }).catch(err => {
-            console.error("Error al enviar:", err);
+            console.error("Error al enviar a Firebase:", err);
+            alert("Error al enviar: " + (err.message || "Fallo en Firebase"));
             chatEnviandoBloqueado = false;
         });
     };
 
-    // Si adjuntó foto/archivo, lo leemos en Base64 para mandarlo a Firebase
     if (tieneArchivo) {
+        const archivo = inputArchivo.files[0];
+        
+        // Validación de tamaño (máx 2MB para evitar saturar la base de datos)
+        if (archivo.size > 2 * 1024 * 1024) {
+            alert("La imagen pesa más de 2MB. Selecciona una más ligera.");
+            chatEnviandoBloqueado = false;
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = function(e) {
             ejecutarPush(e.target.result);
         };
-        reader.readAsDataURL(inputArchivo.files[0]);
+        reader.onerror = function(err) {
+            console.error("Error leyendo archivo:", err);
+            chatEnviandoBloqueado = false;
+        };
+        reader.readAsDataURL(archivo);
     } else {
         ejecutarPush(null);
     }
@@ -120,7 +136,6 @@ window.enviarMensajeSeguro = function() {
 document.addEventListener('DOMContentLoaded', () => {
     const btnEnviar = document.getElementById('btn-enviar-msg');
     if (btnEnviar) {
-        // .onclick evita duplicidad acumulando listeners
         btnEnviar.onclick = (e) => {
             e.preventDefault();
             e.stopImmediatePropagation();
