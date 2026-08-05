@@ -1,5 +1,5 @@
 // ==========================================
-// CHAT.JS - MÓDULO INDEPENDIENTE DE CHAT
+// CHAT.JS - MÓDULO INDEPENDIENTE DE CHAT (CON MULTIMEDIA)
 // ==========================================
 
 let chatEnviandoBloqueado = false;
@@ -69,10 +69,16 @@ window.enviarMensajeSeguro = function() {
     if (chatEnviandoBloqueado) return; // Candado anti-ráfaga
     
     const input = document.getElementById('chat-in');
+    // Ajusta el ID si tu input de archivo tiene otro nombre (ej. 'chat-archivo' o 'file-input')
+    const inputArchivo = document.getElementById('chat-archivo') || document.getElementById('file-input');
+    
     if (!input || typeof firebase === 'undefined') return;
     
     const texto = input.value.trim();
-    if (!texto) return;
+    const tieneArchivo = inputArchivo && inputArchivo.files && inputArchivo.files[0];
+
+    // Si no hay texto ni foto seleccionada, no hacemos nada
+    if (!texto && !tieneArchivo) return;
 
     chatEnviandoBloqueado = true;
     const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
@@ -82,18 +88,33 @@ window.enviarMensajeSeguro = function() {
         window.reproducirSonidoMessenger();
     }
 
-    firebase.database().ref('mensajes').push({
-        autor: autor,
-        texto: texto,
-        tiempo: tiempo,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    }).then(() => {
-        input.value = '';
-        setTimeout(() => { chatEnviandoBloqueado = false; }, 1200);
-    }).catch(err => {
-        console.error("Error al enviar:", err);
-        chatEnviandoBloqueado = false;
-    });
+    const ejecutarPush = (urlMultimedia = null) => {
+        firebase.database().ref('mensajes').push({
+            autor: autor,
+            texto: texto,
+            multimedia: urlMultimedia,
+            tiempo: tiempo,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            input.value = '';
+            if (inputArchivo) inputArchivo.value = '';
+            setTimeout(() => { chatEnviandoBloqueado = false; }, 1200);
+        }).catch(err => {
+            console.error("Error al enviar:", err);
+            chatEnviandoBloqueado = false;
+        });
+    };
+
+    // Si adjuntó foto/archivo, lo leemos en Base64 para mandarlo a Firebase
+    if (tieneArchivo) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            ejecutarPush(e.target.result);
+        };
+        reader.readAsDataURL(inputArchivo.files[0]);
+    } else {
+        ejecutarPush(null);
+    }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
