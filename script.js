@@ -151,14 +151,15 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    if (typeof window.cargarFeed === "function") {
-        window.cargarFeed();
-    }
-    
-    window.iniciarPresencia();
+    const bootstrap = () => {
+        if (typeof window.cargarFeed === "function") window.cargarFeed();
+        window.iniciarPresencia();
+        if (typeof window.iniciarEscuchaZumbidos === "function") window.iniciarEscuchaZumbidos();
+    };
 
-    // Arranca la escucha de "zumbidos" (efecto de bengala) de los demás
-    if (typeof window.iniciarEscuchaZumbidos === "function") {
-        window.iniciarEscuchaZumbidos();
+    if (window.CASUALS && typeof window.CASUALS.whenAuthReady === "function") {
+        window.CASUALS.whenAuthReady(bootstrap);
+    } else {
+        bootstrap();
     }
 });
