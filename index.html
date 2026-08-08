@@ -14,7 +14,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
     
-    <link rel="stylesheet" href="style.css?v=neon_definitivo_17">
+    <link rel="stylesheet" href="style.css?v=neon_definitivo_18">
 </head>
 <body class="vista-feed">
 
@@ -53,14 +53,15 @@
         </div>
 
         <div id="view-content" class="content-area">
-            <div id="feed-container" style="height: 100%;"></div>
+            <div id="feed-container"></div>
             
             <div id="mensajes-container">
                 <div id="mensajes-lista"></div>
                 
                 <div class="chat-input-container">
-                    <input type="text" id="chat-in" placeholder="Escribe un mensaje...">
-                    <button class="send-btn" id="btn-enviar-msg">➤</button>
+ <input type="text" id="chat-in" placeholder="Escribe un mensaje...">
+<button class="send-btn" id="btn-enviar-msg" onclick="enviarMensajeSeguro()">➤</button>
+
                     <button id="btn-bengala-humo" class="smoke-btn">💨</button>
                     
                     <div style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; cursor: pointer;" title="Tomar Foto">
@@ -103,8 +104,10 @@
             }
             window.CASUALS.db = firebase.database();
             window.db = window.CASUALS.db; 
+            window.CASUALS.firebaseInitialized = true;
         } catch (e) {
             console.error("Error crítico al iniciar Firebase:", e);
+            window.CASUALS.firebaseInitialized = false;
         }
     </script>
     
@@ -117,13 +120,13 @@
         }
     </script>
 
-    <script src="login.js?v=17"></script>
-    <script src="multimedia.js?v=17"></script>
-    <script src="feeds.js?v=17"></script>
-    <script src="panic.js?v=17"></script>
-    <script src="push-notifications.js?v=17"></script>
-    <script src="script.js?v=17"></script>
-    <script src="chat.js?v=17"></script>
+    <script src="login.js?v=18"></script>
+    <script src="multimedia.js?v=18"></script>
+    <script src="feeds.js?v=18"></script>
+    <script src="panic.js?v=18"></script>
+    <script src="push-notifications.js?v=18"></script>
+    <script src="script.js?v=18"></script>
+    <script src="chat.js?v=18"></script>
 
     <script>
         if ('serviceWorker' in navigator) {

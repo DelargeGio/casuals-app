@@ -174,8 +174,13 @@ window.publicarEnFeed = function() {
         .then(() => {
             imagenesFeedTemporal = [];
             if (textarea) textarea.value = '';
-            const prev = document.getElementById('feed-preview-imagenes');
-            if (prev) { prev.innerHTML = ''; prev.style.display = 'none'; }
+
+            const preview = document.getElementById('feed-preview-imagenes');
+            if (preview) {
+                preview.innerHTML = '';
+                preview.style.display = 'none';
+            }
+
             const stat = document.getElementById('feed-status-fotos');
             if (stat) stat.textContent = '';
         })

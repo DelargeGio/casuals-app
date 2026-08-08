@@ -1,31 +1,23 @@
-// ==========================================
-// AUDIO.JS - GESTOR ÚNICO DE EFECTOS (SINGLETON)
-// ==========================================
-
 window._audioHumoSingleton = window._audioHumoSingleton || new Audio();
-window._audioHumoSingleton.src = ''; // Recuerda poner aquí tu ruta de audio o cadena Base64
+// Pon tu mp3 en /sounds/humo.mp3 y base64 como fallback
+window._audioHumoSingleton.src = './sounds/humo.mp3';
+window._audioHumoSingleton.preload = 'auto';
+window._audioHumoSingleton.volume = 0.7;
 
 function dispararEfectoUnicoHumo() {
     const audio = window._audioHumoSingleton;
+    if(!audio.src || audio.src.endsWith('/')) return;
     audio.pause();
     audio.currentTime = 0;
-    
-    audio.play().catch(err => {
-        console.warn("Reproducción bloqueada por políticas del navegador:", err);
-    });
+    audio.play().catch(()=>{ /* silenciado hasta interacción */ });
 }
-
 function inicializarBotonHumoGlobal() {
-    // CORRECCIÓN: Se actualizó el ID para que coincida con el HTML
-    const btnHumo = document.getElementById('btn-bengala-humo'); 
-    if (!btnHumo) return;
-
-    btnHumo.onclick = function(e) {
-        if (e) e.stopPropagation();
+    const btn = document.getElementById('btn-bengala-humo');
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         dispararEfectoUnicoHumo();
-        console.log("⚡ Efecto de humo activado limpiamente");
-    };
+    }, { once: false });
 }
-
 document.addEventListener('DOMContentLoaded', inicializarBotonHumoGlobal);
 window.reengancharBotonHumo = inicializarBotonHumoGlobal;

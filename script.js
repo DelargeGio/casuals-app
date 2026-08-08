@@ -66,9 +66,13 @@ window.procesarContenidoMensaje = function(texto) {
     return `<p class="texto-mensaje" style="word-break: break-word; white-space: pre-wrap;">${procesado}</p>`;
 };
 
+let presenciaYaIniciada = false;
 window.iniciarPresencia = function() {
+    if (presenciaYaIniciada) return;
     const usuario = localStorage.getItem("usuario_nombre");
     if (!usuario || typeof firebase === 'undefined') return;
+
+    presenciaYaIniciada = true;
 
     const sanitizedUser = usuario.replace(/[.#$\/\[\]]/g, '_');
     const miConexionRef = firebase.database().ref('conectados/' + sanitizedUser);
@@ -152,4 +156,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
     window.iniciarPresencia();
+
+    // Arranca la escucha de "zumbidos" (efecto de bengala) de los demás
+    if (typeof window.iniciarEscuchaZumbidos === "function") {
+        window.iniciarEscuchaZumbidos();
+    }
 });

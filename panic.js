@@ -1,6 +1,25 @@
 // ==========================================
-// PANIC.JS - BENGALA DE HUMO + ZUMBIDO ÚNICO
+// PANIC.JS - MOTOR DE EMERGENCIA INTEGRADO (v7.3)
 // ==========================================
+
+// Función puente para inyectar alertas de pánico directamente al chat de Firebase
+window.enviarTextoForzado = async function(texto) {
+    if (typeof firebase === 'undefined') return;
+    const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
+    const tiempo = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    try {
+        await firebase.database().ref('mensajes').push({
+            autor: autor,
+            texto: texto,
+            multimedia: null,
+            tiempo: tiempo,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+    } catch (err) {
+        console.error("Error al enviar alerta forzada a Firebase:", err);
+    }
+};
 
 window.activarBengalaYHumio = function() {
     const btn = document.getElementById('btn-bengala-humo');
@@ -18,7 +37,7 @@ window.activarBengalaYHumio = function() {
     // 1. Reproducir sonido localmente una sola vez
     reproducirSonidoBengalaHumo();
 
-    // 2. Enviar a Firebase con un ID único para filtrarlo y que no suene doble en tu dispositivo
+    // 2. Enviar zumbido a Firebase con ID único
     if (typeof firebase !== 'undefined') {
         const remitente = localStorage.getItem('usuario_nombre') || 'Agente';
         const zumbidoId = 'z_' + Math.random().toString(36).substr(2, 9);
@@ -91,7 +110,6 @@ window.iniciarEscuchaZumbidos = function() {
         }
         const data = snapshot.val();
         if (data) {
-            // Si el zumbido fue emitido por este mismo dispositivo, ignorarlo para no duplicar sonido
             if (data.id && data.id === window.ultimoZumbidoEnviadoId) {
                 return;
             }
@@ -100,6 +118,7 @@ window.iniciarEscuchaZumbidos = function() {
     });
 };
 
+// REEMPLAZAR EN panic.js
 window.activarAlertaACAB = function() {
     reproducirSirenaPolicia();
 
@@ -108,27 +127,24 @@ window.activarAlertaACAB = function() {
             (position) => {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
-                const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
+                // [CORREGIDO] Enlace válido y directo a Google Maps
+                const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
                 const mensajeAlerta = `🚨 ¡ALERTA A.C.A.B. 1.3.1.2 ACTIVADA! 🚨\n📍 Ubicación GPS:\n${mapsUrl}`;
-                if (typeof window.enviarTextoForzado === "function") {
-                    window.enviarTextoForzado(mensajeAlerta);
-                }
+                
+                window.enviarTextoForzado(mensajeAlerta);
             },
             (error) => {
-                const mensajeAlerta = "🚨 ¡ALERTA A.C.A.B. 1.3.1.2 ACTIVADA! 🚨";
-                if (typeof window.enviarTextoForzado === "function") {
-                    window.enviarTextoForzado(mensajeAlerta);
-                }
+                const mensajeAlerta = "🚨 ¡ALERTA A.C.A.B. 1.3.1.2 ACTIVADA! (GPS no disponible)";
+                window.enviarTextoForzado(mensajeAlerta);
             },
             { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
         );
     } else {
-        const mensajeAlerta = "🚨 ¡ALERTA A.C.A.B. 1.3.1.2 ACTIVADA! 🚨";
-        if (typeof window.enviarTextoForzado === "function") {
-            window.enviarTextoForzado(mensajeAlerta);
-        }
+        const mensajeAlerta = "🚨 ¡ALERTA A.C.A.B. 1.3.1.2 ACTIVADA!";
+        window.enviarTextoForzado(mensajeAlerta);
     }
 };
+
 
 function reproducirSirenaPolicia() {
     try {
@@ -155,4 +171,4 @@ function reproducirSirenaPolicia() {
     } catch(e) {
         console.log("Sirena omitida:", e);
     }
-}
+};
