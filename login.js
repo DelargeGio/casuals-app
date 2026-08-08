@@ -21,6 +21,20 @@ const ACCESOS_VALIDOS = {
     }
 })();
 
+function entrarAlaApp() {
+    if (window.CASUALS && typeof window.CASUALS.whenAuthReady === "function") {
+        window.CASUALS.whenAuthReady(() => {
+            if (typeof iniciarPresencia === "function") iniciarPresencia();
+            if (typeof cargarMensajes === "function") cargarMensajes();
+            if (typeof renderView === "function") renderView("feed");
+        });
+    } else {
+        if (typeof iniciarPresencia === "function") iniciarPresencia();
+        if (typeof cargarMensajes === "function") cargarMensajes();
+        if (typeof renderView === "function") renderView("feed");
+    }
+}
+
 function inicializarLogin() {
     const sesionActiva = localStorage.getItem("sesion_activa");
     const usuarioGuardado = localStorage.getItem("usuario_nombre");
@@ -30,10 +44,7 @@ function inicializarLogin() {
     if (sesionActiva === "true" && usuarioGuardado && Object.values(ACCESOS_VALIDOS).includes(usuarioGuardado)) {
         if (loginScreen) loginScreen.style.display = "none";
         if (appScreen) appScreen.style.display = "flex";
-
-        if (typeof iniciarPresencia === "function") iniciarPresencia();
-        if (typeof cargarMensajes === "function") cargarMensajes();
-        if (typeof renderView === "function") renderView("feed");
+        entrarAlaApp();
     } else {
         if (loginScreen) loginScreen.style.display = "flex";
         if (appScreen) appScreen.style.display = "none";
@@ -43,7 +54,6 @@ function inicializarLogin() {
     if (tecladoGrid && !tecladoGrid.dataset.listenerConfigured) {
         tecladoGrid.dataset.listenerConfigured = "true";
         
-        // Usar pointerdown para respuesta instantánea en pantallas táctiles móviles
         tecladoGrid.addEventListener("pointerdown", (e) => {
             const btn = e.target.closest("button");
             if (!btn) return;
@@ -77,7 +87,6 @@ function inicializarLogin() {
     }
 }
 
-// Ejecución inmediata segura (soporta tanto si el DOM ya cargó como si está cargando)
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", inicializarLogin);
 } else {
@@ -136,9 +145,7 @@ window.verificarPinManual = function() {
         if (loginScreen) loginScreen.style.display = "none";
         if (appScreen) appScreen.style.display = "flex";
         
-        if (typeof iniciarPresencia === "function") iniciarPresencia();
-        if (typeof cargarMensajes === "function") cargarMensajes();
-        if (typeof renderView === "function") renderView("feed");
+        entrarAlaApp();
     } else {
         if (errorBox) errorBox.style.display = "block";
         window.limpiarPin();
