@@ -10,11 +10,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
     
-    <link rel="stylesheet" href="style.css?v=neon_definitivo_18">
+    <link rel="stylesheet" href="style.css?v=neon_definitivo_19">
 </head>
 <body class="vista-feed">
 
@@ -98,13 +99,41 @@
             appId: "1:552015693448:web:e3cdb8df21007b5a27c13d"
         };
 
+        // --- Cola de "esperar a estar autenticado" ---
+        // Cualquier código que necesite leer/escribir en Firebase debe pasar
+        // por window.CASUALS.whenAuthReady(fn) en vez de llamar a Firebase directo,
+        // así nunca se dispara un permission_denied por llegar demasiado rápido.
+        window.CASUALS.authReady = false;
+        window.CASUALS.authCallbacks = [];
+        window.CASUALS.whenAuthReady = function(cb) {
+            if (window.CASUALS.authReady) {
+                cb();
+            } else {
+                window.CASUALS.authCallbacks.push(cb);
+            }
+        };
+
         try {
             if (!firebase.apps.length) {
                 firebase.initializeApp(firebaseConfig);
             }
             window.CASUALS.db = firebase.database();
-            window.db = window.CASUALS.db; 
+            window.db = window.CASUALS.db;
             window.CASUALS.firebaseInitialized = true;
+
+            firebase.auth().onAuthStateChanged((user) => {
+                if (user) {
+                    window.CASUALS.authReady = true;
+                    window.CASUALS.authCallbacks.forEach(cb => {
+                        try { cb(); } catch (e) { console.error("Error en callback de auth:", e); }
+                    });
+                    window.CASUALS.authCallbacks = [];
+                }
+            });
+
+            firebase.auth().signInAnonymously().catch((err) => {
+                console.error("❌ No se pudo autenticar anónimamente:", err);
+            });
         } catch (e) {
             console.error("Error crítico al iniciar Firebase:", e);
             window.CASUALS.firebaseInitialized = false;
@@ -120,13 +149,13 @@
         }
     </script>
 
-    <script src="login.js?v=18"></script>
-    <script src="multimedia.js?v=18"></script>
-    <script src="feeds.js?v=18"></script>
-    <script src="panic.js?v=18"></script>
-    <script src="push-notifications.js?v=18"></script>
-    <script src="script.js?v=18"></script>
-    <script src="chat.js?v=18"></script>
+    <script src="login.js?v=19"></script>
+    <script src="multimedia.js?v=19"></script>
+    <script src="feeds.js?v=19"></script>
+    <script src="panic.js?v=19"></script>
+    <script src="push-notifications.js?v=19"></script>
+    <script src="script.js?v=19"></script>
+    <script src="chat.js?v=19"></script>
 
     <script>
         if ('serviceWorker' in navigator) {
