@@ -1,5 +1,5 @@
 // ==========================================
-// SCRIPT.JS - MOTOR GENERAL & VISTAS
+// SCRIPT.JS - MOTOR GENERAL & VISTAS (v2.9)
 // ==========================================
 
 const COLORES_USUARIOS = {
@@ -34,81 +34,123 @@ window.reproducirSonidoMessenger = function() {
 
 window.escaparHTML = function(str) {
     if (!str) return '';
-    return str.replace(/[&<>'"]/g, 
-        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-    );
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 };
 
 window.procesarContenidoMensaje = function(texto) {
     if (!texto) return '';
     const textoEscapado = window.escaparHTML(texto);
-    
-    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
-    let procesado = textoEscapado.replace(youtubeRegex, (match, videoId) => {
-        return `<br><div class="multimedia-box"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%; height:200px; border-radius:4px; margin-top:5px;"></iframe></div>`;
+    let procesado = textoEscapado;
+
+    const youtubeRegex = /https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S*)?/g;
+    procesado = procesado.replace(youtubeRegex, (match, videoId) => {
+        return `<br><div class="multimedia-box" style="margin-top:8px;"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%; max-width:400px; height:220px; border-radius:6px; background:#000; display:block;"></iframe></div>`;
     });
 
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     procesado = procesado.replace(urlRegex, (url) => {
-        if (url.includes("youtube.com") || url.includes("youtu.be")) return url;
+        if (url.includes("youtube.com") || url.includes("youtu.be")) {
+            return url; 
+        }
 
         if (url.match(/\.(jpeg|jpg|gif|png|webp)(\?[^\s]*)?$/i)) {
-            return `<br><div class="multimedia-box"><a href="${url}" target="_blank"><img src="${url}" class="chat-img-zoom" data-url="${url}" alt="Imagen" style="width:100%; max-height:220px; object-fit:contain; border-radius:4px; margin-top:5px; cursor:pointer;"></a></div>`;
+            return `<br><div class="multimedia-box" style="margin-top:8px;"><a href="${url}" target="_blank"><img src="${url}" class="chat-img-zoom" data-url="${url}" alt="Imagen" style="width:100%; max-height:220px; object-fit:contain; border-radius:6px; cursor:pointer;"></a></div>`;
         } else if (url.match(/\.(mp4|webm|ogg|mov)(\?[^\s]*)?$/i)) {
-            return `<br><div class="multimedia-box"><video controls playsinline preload="metadata" src="${url}" style="width:100%; max-height:220px; background:#000; border-radius:4px; margin-top:5px;"></video></div>`;
+            return `<br><div class="multimedia-box" style="margin-top:8px;"><video controls playsinline preload="metadata" src="${url}" style="width:100%; max-height:220px; background:#000; border-radius:6px;"></video></div>`;
         } else if (url.match(/\.(mp3|wav|ogg|m4a)(\?[^\s]*)?$/i)) {
-            return `<br><div class="multimedia-box" style="padding:5px;"><audio controls src="${url}" style="width:100%; margin-top:5px;"></audio></div>`;
+            return `<br><div class="multimedia-box" style="margin-top:8px; padding:5px;"><audio controls src="${url}" style="width:100%;"></audio></div>`;
+        } else {
+            let etiquetaRed = "🔗 ENLACE";
+            let colorBorde = "#4da6ff";
+            if (url.includes("instagram.com")) { etiquetaRed = "📸 INSTAGRAM"; colorBorde = "#ff3366"; }
+            else if (url.includes("facebook.com") || url.includes("fb.watch")) { etiquetaRed = "📘 FACEBOOK"; colorBorde = "#3b5998"; }
+            else if (url.includes("tiktok.com")) { etiquetaRed = "🎵 TIKTOK"; colorBorde = "#ff0050"; }
+
+            return `<br><div class="multimedia-box" style="background: rgba(0,0,0,0.3); border-left: 3px solid ${colorBorde}; padding: 8px 12px; border-radius: 4px; margin-top: 8px; display: inline-block; max-width: 100%;">
+                <span style="font-size: 0.75rem; font-weight: bold; color: ${colorBorde}; display: block; margin-bottom: 2px;">${etiquetaRed}</span>
+                <a href="${url}" target="_blank" style="color: var(--neon-azul); text-decoration: underline; word-break: break-all; font-size: 0.9rem;">${url}</a>
+            </div>`;
         }
-        
-        return `<a href="${url}" target="_blank" style="color: var(--neon-azul); text-decoration: underline; word-break: break-all;">${url}</a>`;
     });
 
-    return `<p class="texto-mensaje" style="word-break: break-word; white-space: pre-wrap;">${procesado}</p>`;
+    return `<p class="texto-mensaje" style="word-break: break-word; white-space: pre-wrap; margin:0;">${procesado}</p>`;
 };
 
-let presenciaYaIniciada = false;
+// ==========================================
+// CONTROL DE PRESENCIA DINÁMICO POR USUARIO REAL
+// ==========================================
+let presenciaActualRef = null;
+let sesionPresenciaId = null;
+
 window.iniciarPresencia = function() {
-    if (presenciaYaIniciada) return;
-    const usuario = localStorage.getItem("usuario_nombre");
-    if (!usuario || typeof firebase === 'undefined') return;
+    // Obtener el nombre real del usuario logueado en este dispositivo/pestaña
+    let usuarioActivo = localStorage.getItem("usuario_nombre");
+    
+    // Si no hay un nombre definido, aseguramos que tome uno de los permitidos o un identificador único por sesión
+    if (!usuarioActivo || usuarioActivo.trim() === "") {
+        usuarioActivo = "Calavera ☠️"; // Valor por defecto solo si está completamente vacío
+        localStorage.setItem("usuario_nombre", usuarioActivo);
+    }
+    
+    if (typeof firebase === 'undefined' || !firebase.database) {
+        setTimeout(window.iniciarPresencia, 300);
+        return;
+    }
 
-    presenciaYaIniciada = true;
+    if (presenciaActualRef) {
+        try { presenciaActualRef.remove(); } catch(e) {}
+    }
 
-    const sanitizedUser = usuario.replace(/[.#$\/\[\]]/g, '_');
-    const miConexionRef = firebase.database().ref('conectados/' + sanitizedUser);
-    const conectadoRef = firebase.database().ref('.info/connected');
+    const db = firebase.database();
+    const conectadoRef = db.ref('.info/connected');
 
     conectadoRef.on('value', (snap) => {
         if (snap.val() === true) {
-            miConexionRef.set({
-                nombre: usuario,
+            // Refrescar el nombre actual por si cambió en el storage
+            const nombreParaBD = localStorage.getItem("usuario_nombre") || usuarioActivo;
+            if (!sesionPresenciaId) {
+                sesionPresenciaId = db.ref('conectados').push().key;
+            }
+            presenciaActualRef = db.ref('conectados/' + sesionPresenciaId);
+            presenciaActualRef.set({
+                nombre: nombreParaBD,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             });
-            miConexionRef.onDisconnect().remove();
+            presenciaActualRef.onDisconnect().remove();
         }
     });
 
-    firebase.database().ref('conectados').on('value', (snapshot) => {
-        const data = snapshot.val();
-        const listaSpan = document.getElementById('lista-nombres-conectados');
-        if (!listaSpan) return;
+    if (!window._conectadosListenerConfigurado) {
+        window._conectadosListenerConfigurado = true;
+        db.ref('conectados').on('value', (snapshot) => {
+            const data = snapshot.val();
+            const listaSpan = document.getElementById('lista-nombres-conectados');
+            if (!listaSpan) return;
 
-        if (!data) {
-            listaSpan.textContent = "Nadie conectado";
-            return;
-        }
+            if (!data) {
+                listaSpan.textContent = "Nadie conectado";
+                return;
+            }
 
-        let elementosHTML = [];
-        Object.values(data).forEach(item => {
-            if (item && item.nombre) {
-                const nombreUser = item.nombre;
+            let nombresUnicos = new Set();
+            Object.values(data).forEach(item => {
+                if (item && item.nombre) nombresUnicos.add(item.nombre);
+            });
+
+            let elementosHTML = [];
+            nombresUnicos.forEach(nombreUser => {
                 const estilo = COLORES_USUARIOS[nombreUser] || { color: "#4da6ff", sombra: "0 0 8px #4da6ff" };
                 elementosHTML.push(`<span style="color: ${estilo.color} !important; text-shadow: ${estilo.sombra}; font-weight: bold; margin: 0 4px;">${nombreUser}</span>`);
-            }
-        });
+            });
 
-        listaSpan.innerHTML = elementosHTML.length > 0 ? elementosHTML.join(' • ') : "Nadie conectado";
-    });
+            listaSpan.innerHTML = elementosHTML.length > 0 ? elementosHTML.join(' • ') : "Nadie conectado";
+        });
+    }
 };
 
 window.renderView = function(vista) {
@@ -120,7 +162,7 @@ window.renderView = function(vista) {
         body.className = "vista-feed";
         if (navFeed) navFeed.classList.add("active");
         if (navChat) navChat.classList.remove("active");
-        if (typeof window.renderFeed === "function") window.renderFeed();
+        if (typeof window.cargarPostsFeed === "function") window.cargarPostsFeed();
     } else if (vista === "chat") {
         body.className = "vista-chat";
         if (navChat) navChat.classList.add("active");
@@ -129,6 +171,13 @@ window.renderView = function(vista) {
         const lista = document.getElementById('mensajes-lista');
         if (lista) lista.scrollTop = lista.scrollHeight;
     }
+};
+
+window.inicializarAppCompleta = function() {
+    if (typeof window.iniciarPresencia === "function") window.iniciarPresencia();
+    if (typeof window.cargarPostsFeed === "function") window.cargarPostsFeed();
+    if (typeof window.cargarMensajes === "function") window.cargarMensajes();
+    if (typeof window.iniciarEscuchaZumbidos === "function") window.iniciarEscuchaZumbidos();
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -151,15 +200,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    const bootstrap = () => {
-        if (typeof window.cargarFeed === "function") window.cargarFeed();
-        window.iniciarPresencia();
-        if (typeof window.iniciarEscuchaZumbidos === "function") window.iniciarEscuchaZumbidos();
-    };
-
     if (window.CASUALS && typeof window.CASUALS.whenAuthReady === "function") {
-        window.CASUALS.whenAuthReady(bootstrap);
+        window.CASUALS.whenAuthReady(window.inicializarAppCompleta);
     } else {
-        bootstrap();
+        window.inicializarAppCompleta();
     }
 });

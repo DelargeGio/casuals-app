@@ -1,5 +1,5 @@
 // ==========================================
-// PANIC.JS - MOTOR DE EMERGENCIA INTEGRADO (v7.3)
+// PANIC.JS - MOTOR DE EMERGENCIA INTEGRADO (v7.5 - Con Sacudida JS Directa)
 // ==========================================
 
 // Función puente para inyectar alertas de pánico directamente al chat de Firebase
@@ -34,10 +34,10 @@ window.activarBengalaYHumio = function() {
         }, 600);
     }
 
-    // 1. Reproducir sonido localmente una sola vez
+    // 1. Reproducir sonido y sacudida localmente una sola vez
     reproducirSonidoBengalaHumo();
 
-    // 2. Enviar zumbido a Firebase con ID único
+    // 2. Enviar zumbido a Firebase con ID único para sincronizar a todos los conectados
     if (typeof firebase !== 'undefined') {
         const remitente = localStorage.getItem('usuario_nombre') || 'Agente';
         const zumbidoId = 'z_' + Math.random().toString(36).substr(2, 9);
@@ -50,6 +50,35 @@ window.activarBengalaYHumio = function() {
         });
     }
 };
+
+// Función de sacudida directa por JavaScript (Infalible y fluida)
+function hacerEfectoSacudida() {
+    const pantalla = document.getElementById('app-screen') || document.body;
+    if (!pantalla) return;
+
+    const steps = [
+        "translate(5px, 5px)",
+        "translate(-5px, -4px)",
+        "translate(-5px, 4px)",
+        "translate(5px, -4px)",
+        "translate(-4px, 5px)",
+        "translate(4px, -5px)",
+        "translate(5px, 2px)",
+        "translate(-2px, -5px)",
+        "translate(0px, 0px)"
+    ];
+
+    let i = 0;
+    const interval = setInterval(() => {
+        if (i < steps.length) {
+            pantalla.style.transform = steps[i];
+            i++;
+        } else {
+            clearInterval(interval);
+            pantalla.style.transform = "none";
+        }
+    }, 35);
+}
 
 function reproducirSonidoBengalaHumo() {
     try {
@@ -82,16 +111,17 @@ function reproducirSonidoBengalaHumo() {
         noise.start(ahora);
         noise.stop(ahora + 2.2);
 
-        const pantalla = document.getElementById('app-screen');
-        if (pantalla) {
-            pantalla.style.animation = 'zumbidoUltraShake 0.08s ease-in-out 8';
-            setTimeout(() => { pantalla.style.animation = ''; }, 650);
-        }
+        // Disparar la sacudida directa por JS
+        hacerEfectoSacudida();
+
         if (navigator.vibrate) {
-            navigator.vibrate([120, 60, 120, 60, 300]);
+            navigator.vibrate([200, 100, 200, 100, 300]);
         }
     } catch(e) {
         console.log("Audio omitido:", e);
+        // Forzar la sacudida y vibración incluso si el contexto de audio se bloquea
+        hacerEfectoSacudida();
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 300]);
     }
 }
 
@@ -118,7 +148,7 @@ window.iniciarEscuchaZumbidos = function() {
     });
 };
 
-// REEMPLAZAR EN panic.js
+// ACTIVAR ALERTA A.C.A.B. CON UBICACIÓN GPS CORREGIDA
 window.activarAlertaACAB = function() {
     reproducirSirenaPolicia();
 
@@ -127,8 +157,7 @@ window.activarAlertaACAB = function() {
             (position) => {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
-                // [CORREGIDO] Enlace válido y directo a Google Maps
-                const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+                const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
                 const mensajeAlerta = `🚨 ¡ALERTA A.C.A.B. 1.3.1.2 ACTIVADA! 🚨\n📍 Ubicación GPS:\n${mapsUrl}`;
                 
                 window.enviarTextoForzado(mensajeAlerta);
@@ -144,7 +173,6 @@ window.activarAlertaACAB = function() {
         window.enviarTextoForzado(mensajeAlerta);
     }
 };
-
 
 function reproducirSirenaPolicia() {
     try {

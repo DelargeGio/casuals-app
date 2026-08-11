@@ -1,268 +1,226 @@
 // ==========================================
-// FEEDS.JS - MOTOR TURBO INDUSTRIAL (v3.4 - ICONO LIMPIO)
+// FEEDS.JS - MOTOR INDUSTRIAL PUNK (FILTROS FLUIDOS SIN CORTES)
 // ==========================================
 
-const ADMINS_AUTORIZADOS = ["Calavera ☠️", "Calavera"];
-let categoriaSeleccionadaFeed = 'jornada';
-let feedEstructuraCreada = false;
-let imagenesFeedTemporal = [];
+let categoriaActualFeed = 'todos';
 
-window.renderFeed = function() {
-    inicializarFeedEstructuraUnica();
-};
-
-window.cargarFeed = function() {
-    inicializarFeedEstructuraUnica();
-};
-
-function inicializarFeedEstructuraUnica() {
-    const feedContainer = document.getElementById('feed-container');
-    if (!feedContainer) return;
-
-    if (!feedEstructuraCreada) {
-        feedContainer.style.cssText = `
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            background: #050706;
-            box-sizing: border-box;
-            overflow: hidden;
-            position: relative;
-        `;
-
-        feedContainer.innerHTML = `
-            <div style="display: flex; flex-direction: column; width: 100%; height: 100%; color: #fff; font-family: 'Special Elite', monospace, sans-serif; box-sizing: border-box; overflow: hidden;">
-                
-                <div style="padding: 10px 14px; background: rgba(5, 8, 7, 0.98); backdrop-filter: blur(14px); border-bottom: 1px solid rgba(0, 243, 255, 0.3); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; z-index: 10; box-sizing: border-box;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-weight: 900; font-size: 0.9rem; letter-spacing: 2px; color: #fff; text-shadow: 0 0 10px rgba(0,243,255,0.6);">
-                            CASUALS<span style="color: #00f3ff;">.FEED</span>
-                        </span>
-                    </div>
-                    <div style="font-size: 0.55rem; color: #00ff66; background: rgba(0,255,102,0.1); padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(0,255,102,0.4); font-weight: bold; letter-spacing: 1px;">
-                        [TURBO_ACTIVE]
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 6px; padding: 8px 12px; background: rgba(8, 12, 10, 0.95); border-bottom: 1px solid rgba(255,255,255,0.08); overflow-x: auto; flex-shrink: 0; scrollbar-width: none; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
-                    <button id="btn-cat-jornada" onclick="cambiarCategoriaFeed('jornada')" style="touch-action: manipulation; padding: 5px 12px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer; white-space: nowrap; font-family: monospace;">⚽ 4ta Jornada</button>
-                    <button id="btn-cat-banderas" onclick="cambiarCategoriaFeed('banderas')" style="touch-action: manipulation; padding: 5px 12px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer; white-space: nowrap; font-family: monospace;">🏴‍☠️ Trapos</button>
-                    <button id="btn-cat-viajes" onclick="cambiarCategoriaFeed('viajes')" style="touch-action: manipulation; padding: 5px 12px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer; white-space: nowrap; font-family: monospace;">🚌 Away Days</button>
-                    <button id="btn-cat-ropero" onclick="cambiarCategoriaFeed('ropero')" style="touch-action: manipulation; padding: 5px 12px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer; white-space: nowrap; font-family: monospace;">🧥 Ropero</button>
-                    <button id="btn-cat-afanes" onclick="cambiarCategoriaFeed('afanes')" style="touch-action: manipulation; padding: 5px 12px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer; white-space: nowrap; font-family: monospace;">🔥 Tribuna</button>
-                </div>
-
-                <div id="feed-composer-wrapper" style="padding: 8px 12px; background: rgba(10, 15, 12, 0.98); border-bottom: 2px solid rgba(0, 243, 255, 0.25); flex-shrink: 0; box-sizing: border-box;">
-                    <textarea id="feed-input-texto" placeholder="// Transmitir reporte o flayer..." rows="2" style="width: 100%; background: #030504; color: #00f3ff; border: 1px solid rgba(0,243,255,0.3); padding: 6px; border-radius: 4px; font-family: monospace; resize: none; outline: none; font-size: 0.75rem; box-sizing: border-box;"></textarea>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px; gap: 6px;">
-                        <label style="cursor:pointer; background: rgba(0,243,255,0.08); border: 1px solid rgba(0,243,255,0.3); padding: 4px 8px; border-radius: 4px; font-size: 0.65rem; color: #00f3ff; display: flex; align-items: center; gap: 4px; font-family: monospace;">
-                            📸 Foto <input type="file" id="feed-input-fotos" accept="image/*" style="display:none;">
-                        </label>
-                        <span id="feed-status-fotos" style="font-size: 0.6rem; color: #888; flex: 1; text-align: center; font-family: monospace;"></span>
-                        <button id="feed-btn-publicar" style="background: #00f3ff; color: #000; border: none; font-weight: bold; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; font-family: monospace;">TRANSMITIR</button>
-                    </div>
-                    <div id="feed-preview-imagenes" style="display:none; gap: 6px; margin-top: 5px;"></div>
-                </div>
-
-                <div id="feed-posts-lista" style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 12px; padding-bottom: 40px; box-sizing: border-box; width: 100%;">
-                    <div style="text-align: center; color: #00f3ff; margin-top: 30px; font-size: 0.75rem; font-family: monospace;">[SINCRONIZANDO...]</div>
-                </div>
-            </div>
-        `;
-        feedEstructuraCreada = true;
-
-        const inputFotos = document.getElementById('feed-input-fotos');
-        if (inputFotos) inputFotos.addEventListener('change', prepararImagenesFeed);
-
-        const btnPublicar = document.getElementById('feed-btn-publicar');
-        if (btnPublicar) btnPublicar.addEventListener('click', window.publicarEnFeed);
-    }
-
-    actualizarPermisosYEstilos(categoriaSeleccionadaFeed);
-    cargarPostsFirebase(categoriaSeleccionadaFeed);
+function escaparHTMLSeguroFeed(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
-window.cambiarCategoriaFeed = function(cat) {
-    categoriaSeleccionadaFeed = cat;
-    actualizarPermisosYEstilos(cat);
-    cargarPostsFirebase(cat);
-};
+function inicializarFiltrosFeed() {
+    const contenedorFiltros = document.getElementById('feed-filtros');
+    if (!contenedorFiltros) return;
 
-function actualizarPermisosYEstilos(catActiva) {
-    const usuarioActual = localStorage.getItem('usuario_nombre') || '';
-    const esAdmin = ADMINS_AUTORIZADOS.some(a => usuarioActual.includes("Calavera") || usuarioActual === a);
-    const composer = document.getElementById('feed-composer-wrapper');
+    const categorias = [
+        { id: 'todos', nombre: '🔥 Todo' },
+        { id: 'general', nombre: '📢 Noticias' },
+        { id: 'trapos', nombre: '🏴‍☠️ Trapos' },
+        { id: 'away-days', nombre: '🚌 Away Days' },
+        { id: 'ropero', nombre: '🧥 Ropero' },
+        { id: 'tribuna', nombre: '🔥 Tribuna' },
+        { id: 'equipo', nombre: '⚽ Equipo' }
+    ];
 
-    if (composer) {
-        if (catActiva === 'jornada' && !esAdmin) {
-            composer.style.display = 'none';
-        } else {
-            composer.style.display = 'block';
-        }
-    }
-
-    ['jornada', 'banderas', 'viajes', 'ropero', 'afanes'].forEach(c => {
-        const btn = document.getElementById(`btn-cat-${c}`);
-        if (!btn) return;
-        if (c === catActiva) {
-            btn.style.background = '#00f3ff';
-            btn.style.border = '1px solid #00f3ff';
-            btn.style.color = '#000';
-            btn.style.boxShadow = '0 0 8px rgba(0,243,255,0.5)';
-        } else {
-            btn.style.background = 'rgba(255,255,255,0.03)';
-            btn.style.border = '1px solid rgba(255,255,255,0.15)';
-            btn.style.color = '#888';
-            btn.style.boxShadow = 'none';
-        }
-    });
-}
-
-function prepararImagenesFeed(event) {
-    const file = event.target.files[0];
-    if (!file || !file.type.startsWith('image/')) return;
-
-    const status = document.getElementById('feed-status-fotos');
-    const preview = document.getElementById('feed-preview-imagenes');
+    let wrapper = contenedorFiltros.querySelector('.filtros-wrapper');
     
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const MAX = 800;
-            let w = img.width, h = img.height;
-            if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } }
-            else { if (h > MAX) { w *= MAX / h; h = MAX; } }
-            canvas.width = w;
-            canvas.height = h;
-            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            
-            imagenesFeedTemporal = [canvas.toDataURL('image/jpeg', 0.75)];
-            if (preview) {
-                preview.innerHTML = `<img src="${imagenesFeedTemporal[0]}" style="width:45px; height:45px; object-fit:cover; border-radius:4px; border:1px solid #00f3ff;">`;
-                preview.style.display = 'flex';
+    if (!wrapper) {
+        contenedorFiltros.innerHTML = `<div class="filtros-wrapper"></div>`;
+        wrapper = contenedorFiltros.querySelector('.filtros-wrapper');
+        
+        wrapper.innerHTML = categorias.map(cat => `
+            <button class="btn-filtro-feed ${cat.id === categoriaActualFeed ? 'activo' : ''}" 
+                    data-categoria="${cat.id}">
+                ${cat.nombre}
+            </button>
+        `).join('');
+
+        wrapper.querySelectorAll('.btn-filtro-feed').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const nuevaCat = e.currentTarget.getAttribute('data-categoria');
+                if (categoriaActualFeed === nuevaCat) return;
+                categoriaActualFeed = nuevaCat;
+                
+                wrapper.querySelectorAll('.btn-filtro-feed').forEach(b => {
+                    if (b.getAttribute('data-categoria') === categoriaActualFeed) {
+                        b.classList.add('activo');
+                    } else {
+                        b.classList.remove('activo');
+                    }
+                });
+
+                window.cargarPostsFeed();
+            });
+        });
+    } else {
+        wrapper.querySelectorAll('.btn-filtro-feed').forEach(b => {
+            if (b.getAttribute('data-categoria') === categoriaActualFeed) {
+                b.classList.add('activo');
+            } else {
+                b.classList.remove('activo');
             }
-            if (status) status.textContent = '[Flayer listo]';
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+        });
+    }
 }
 
-window.publicarEnFeed = function() {
-    const textarea = document.getElementById('feed-input-texto');
-    const texto = textarea ? textarea.value.trim() : '';
-
-    if (!texto && imagenesFeedTemporal.length === 0) return;
-    if (typeof firebase === 'undefined') return;
-
-    const autor = localStorage.getItem('usuario_nombre') || 'Calavera ☠️';
-    const nuevoPost = {
-        autor: autor,
-        descripcion: texto,
-        imagen: imagenesFeedTemporal[0] || '',
-        tiempo: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    };
-
-    const btn = document.getElementById('feed-btn-publicar');
-    if (btn) btn.disabled = true;
-
-    firebase.database().ref('feed_' + categoriaSeleccionadaFeed).push(nuevoPost)
-        .then(() => {
-            imagenesFeedTemporal = [];
-            if (textarea) textarea.value = '';
-
-            const preview = document.getElementById('feed-preview-imagenes');
-            if (preview) {
-                preview.innerHTML = '';
-                preview.style.display = 'none';
-            }
-
-            const stat = document.getElementById('feed-status-fotos');
-            if (stat) stat.textContent = '';
-        })
-        .catch(err => console.error(err))
-        .finally(() => { if (btn) btn.disabled = false; });
-};
-
-function cargarPostsFirebase(categoria) {
+window.cargarPostsFeed = function() {
+    const db = window.db || (typeof firebase !== 'undefined' && firebase.database ? firebase.database() : null);
+    
     const listaPosts = document.getElementById('feed-posts-lista');
     if (!listaPosts) return;
-    if (typeof firebase === 'undefined') return;
 
-    const usuarioActual = localStorage.getItem('usuario_nombre') || '';
-    const ref = firebase.database().ref('feed_' + categoria).limitToLast(15);
+    if (!document.body.classList.contains('vista-chat')) {
+        document.body.classList.add('vista-feed');
+    }
+
+    listaPosts.innerHTML = '<div style="text-align:center; color:var(--oro, #ffcc00); padding:30px; font-family:monospace; font-size: 0.85rem; letter-spacing: 1px; text-shadow: 0 0 8px rgba(255,204,0,0.4);">⚡ SINCRONIZANDO SEÑAL SEGURA...</div>';
+
+    if (!db) {
+        setTimeout(window.cargarPostsFeed, 300);
+        return;
+    }
+
+    try {
+        db.ref('posts').off();
+    } catch(e) {}
+
+    const refPosts = db.ref('posts').limitToLast(50);
     
-    ref.off();
-    ref.on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (!data) {
-            listaPosts.innerHTML = `<div style="text-align: center; color: #666; margin-top: 30px; font-size: 0.75rem; font-family: monospace;">[!] SIN NOVEDADES EN ESTA SECCIÓN</div>`;
+    refPosts.on('value', (snapshot) => {
+        listaPosts.innerHTML = '';
+        let postsArray = [];
+
+        snapshot.forEach((childSnapshot) => {
+            postsArray.push({ id: childSnapshot.key, ...childSnapshot.val() });
+        });
+
+        postsArray.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        const postsFiltrados = postsArray.filter(post => {
+            if (categoriaActualFeed === 'todos') return true;
+            return post.categoria === categoriaActualFeed;
+        });
+
+        const postsConMedia = postsArray.filter(p => p.multimedia);
+        if (postsConMedia.length > 0) {
+            const carruselContainer = document.createElement('div');
+            carruselContainer.style.cssText = "margin: 0 12px 18px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;";
+            carruselContainer.innerHTML = `
+                <div style="font-size: 0.7rem; color: #777; font-family: monospace; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: bold;">📡 Transmisiones Multimedia</div>
+                <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; -webkit-overflow-scrolling: touch;">
+                    ${postsConMedia.slice(0, 10).map(post => `
+                        <div onclick="if(typeof abrirVisorImagen==='function')abrirVisorImagen('${post.multimedia}')" style="flex: 0 0 88px; height: 88px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,204,0,0.4); background: #000; cursor: pointer; position: relative; box-shadow: 0 6px 12px rgba(0,0,0,0.7);">
+                            <img src="${post.multimedia}" style="width: 100%; height: 100%; object-fit: cover;" alt="Miniatura">
+                            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); font-size: 0.55rem; color: #fff; padding: 4px 2px; text-align: center; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                ${post.autor || 'Anónimo'}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            listaPosts.appendChild(carruselContainer);
+        }
+
+        if (postsFiltrados.length === 0) {
+            listaPosts.innerHTML += `
+                <div style="text-align:center; color:#666; padding:45px 20px; font-family: monospace; font-size: 0.85rem;">
+                    [!] Frecuencia limpia. Sin transmisiones en esta categoría.<br><br>
+                    <button onclick="window.crearPostPrueba()" style="padding: 10px 20px; background: linear-gradient(135deg, rgba(255,204,0,0.2), rgba(0,0,0,0.8)); color: var(--oro, #ffcc00); border: 1px solid var(--oro, #ffcc00); border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; font-family: monospace; box-shadow: 0 4px 15px rgba(255,204,0,0.2);">
+                        + TRANSMITIR PRUEBA
+                    </button>
+                </div>`;
             return;
         }
 
-        const escapar = window.escaparHTML || (s => s);
+        postsFiltrados.forEach(post => {
+            listaPosts.appendChild(crearElementoPostFeed(post));
+        });
+    }, (error) => {
+        listaPosts.innerHTML = `<div style="text-align:center; color:#ff3366; padding:20px; font-family: monospace;">ERROR DE ENLACE DB: ${error.message}</div>`;
+    });
+};
 
-        const htmlPosts = Object.keys(data).reverse().map(key => {
-            const post = data[key];
-            const autor = escapar(post.autor || 'Calavera ☠️');
-            const desc = escapar(post.descripcion || '');
-            const tiempo = escapar(post.tiempo || '');
-            const img = post.imagen ? `<div style="width:100%; background:#000; max-height:350px; overflow:hidden;"><img src="${post.imagen}" onclick="window.abrirVisorImagen('${post.imagen}')" style="width:100%; height:auto; object-fit:cover; display:block; cursor:zoom-in;"></div>` : '';
+function crearElementoPostFeed(post) {
+    const div = document.createElement('div');
+    div.className = 'card-post-industrial';
+    div.style.cssText = "background: linear-gradient(145deg, rgba(14,14,14,0.95), rgba(6,6,6,0.98)); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid var(--oro, #ffcc00); border-radius: 8px; padding: 14px; margin: 0 12px 14px 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05); font-family: monospace;";
 
-            const esAutor = (post.autor === usuarioActual);
-            const esAdmin = ADMINS_AUTORIZADOS.some(a => usuarioActual.includes("Calavera") || usuarioActual === a);
-            let botonBorrarHTML = '';
-            
-            if (esAutor || esAdmin) {
-                botonBorrarHTML = `
-                    <button onclick="window.confirmarEliminacionPost('${categoria}', '${key}')" style="background:transparent; border:none; cursor:pointer; font-size:0.9rem; padding:0; opacity:0.7; outline:none;" title="Eliminar transmisión">
-                        🗑️
-                    </button>
-                `;
-            }
-
-            return `
-                <div id="post-card-${key}" style="width:100%; max-width:440px; background:#080c09; border:1px solid rgba(0,243,255,0.25); border-radius:6px; overflow:hidden; font-family:monospace; box-sizing:border-box;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:rgba(0,0,0,0.8); border-bottom:1px solid rgba(255,255,255,0.06);">
-                        <span style="font-size:0.75rem; font-weight:bold; color:#00ff66;">☠️ ${autor}</span>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="font-size:0.6rem; color:#777;">${tiempo}</span>
-                            ${botonBorrarHTML}
-                        </div>
-                    </div>
-                    ${img}
-                    ${desc ? `<div style="padding:8px 10px; font-size:0.75rem; color:#e0e0e0; line-height:1.35; word-break:break-word;">${desc}</div>` : ''}
+    let mediaHTML = '';
+    if (post.multimedia) {
+        if (post.esVideo) {
+            mediaHTML = `
+                <div style="width: 100%; max-height: 400px; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+                    <video src="${post.multimedia}" controls playsinline preload="metadata" style="width: 100%; height: auto; display: block;"></video>
                 </div>
             `;
-        }).join('');
+        } else {
+            mediaHTML = `
+                <div style="width: 100%; max-height: 420px; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+                    <img src="${post.multimedia}" onclick="if(typeof abrirVisorImagen==='function')abrirVisorImagen('${post.multimedia}')" alt="Media" style="width: 100%; height: auto; display: block; cursor: pointer; object-fit: cover;">
+                </div>
+            `;
+        }
+    }
 
-        listaPosts.innerHTML = htmlPosts;
-    });
-}
+    const textoSeguro = escaparHTMLSeguroFeed(post.texto || '');
+    const textoHTML = `<p style="margin: 10px 0 0 0; word-break: break-word; white-space: pre-wrap; color: #e2e2e2; font-size: 0.92rem; line-height: 1.5; font-family: system-ui, -apple-system, sans-serif;">${textoSeguro}</p>`;
+    const tiempo = post.timestamp ? new Date(post.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
-window.confirmarEliminacionPost = function(categoria, postId) {
-    const seguro = confirm("[ATENCIÓN] ¿Eliminar esta transmisión del feed?");
-    if (!seguro) return;
+    div.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items: center; font-size: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: bold; color: var(--oro, #ffcc00); text-shadow: 0 0 6px rgba(255,204,0,0.3);">${escaparHTMLSeguroFeed(post.autor || 'Anónimo')}</span>
+                <span style="text-transform: uppercase; font-size: 0.6rem; background: linear-gradient(135deg, rgba(255,204,0,0.15), rgba(255,204,0,0.05)); color: var(--oro, #ffcc00); padding: 3px 7px; border-radius: 4px; border: 1px solid rgba(255,204,0,0.25); font-weight: bold;">${post.categoria || 'general'}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 0.65rem; color: #666;">${tiempo}</span>
+                <button onclick="window.eliminarPost('${post.id}')" title="Eliminar transmisión" style="background: rgba(255,51,102,0.1); border: 1px solid rgba(255,51,102,0.3); color: #ff3366; cursor: pointer; font-size: 0.75rem; padding: 3px 6px; border-radius: 4px;">🗑️</button>
+            </div>
+        </div>
+        ${post.texto ? textoHTML : ''}
+        ${mediaHTML}
+    `;
+    return div;
+};
 
-    firebase.database().ref('feed_' + categoria).child(postId).remove()
-        .then(() => {
-            const card = document.getElementById(`post-card-${postId}`);
-            if (card) card.remove();
-        })
-        .catch(err => {
-            console.error("Error al eliminar post:", err);
-            alert("No se pudo eliminar la transmisión.");
+window.eliminarPost = async function(postId) {
+    if (confirm("¿Estás seguro de eliminar esta transmisión de la red?")) {
+        try {
+            const db = window.db || firebase.database();
+            await db.ref('posts/' + postId).remove();
+        } catch (err) {
+            alert("Error al eliminar: " + err.message);
+        }
+    }
+};
+
+window.crearPostPrueba = async function() {
+    try {
+        const db = window.db || firebase.database();
+        await db.ref('posts').push({
+            autor: localStorage.getItem("casuals_usuario") || "Calavera ☠️",
+            categoria: categoriaActualFeed === 'todos' ? 'away-days' : categoriaActualFeed,
+            texto: "Transmisión de prueba con desplazamiento fluido.",
+            multimedia: null,
+            esVideo: false,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
         });
+    } catch(err) {
+        alert("Error al crear post: " + err.message);
+    }
 };
 
-window.abrirVisorImagen = function(url) {
-    const modal = document.createElement('div');
-    modal.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; display:flex; align-items:center; justify-content:center; cursor:zoom-out;";
-    modal.innerHTML = `<img src="${url}" style="max-width:95%; max-height:95%; object-fit:contain; border:1px solid #00f3ff;">`;
-    modal.onclick = () => document.body.removeChild(modal);
-    document.body.appendChild(modal);
-};
+document.addEventListener('DOMContentLoaded', () => {
+    inicializarFiltrosFeed();
+    if (window.CASUALS && typeof window.CASUALS.whenAuthReady === "function") {
+        window.CASUALS.whenAuthReady(window.cargarPostsFeed);
+    } else {
+        window.cargarPostsFeed();
+    }
+});

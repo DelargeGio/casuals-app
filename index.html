@@ -15,12 +15,12 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
     
-    <link rel="stylesheet" href="style.css?v=neon_definitivo_19">
+    <link rel="stylesheet" href="style.css?v=neon_definitivo_22">
 </head>
 <body class="vista-feed">
 
     <div id="login-screen" class="login-body">
-        <img src="img/banner.png" alt="Casuals Banner" class="banner-integrado" onerror="this.style.display='none'">
+        <img src="img/banner.png" alt="CASUALS" style="max-width: 100%; height: auto; margin-bottom: 15px;">
         <h1 class="titulo-industrial">CASUALS</h1>
         <div id="pin-display">
             <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
@@ -54,15 +54,17 @@
         </div>
 
         <div id="view-content" class="content-area">
-            <div id="feed-container"></div>
+            <div id="feed-container">
+                <div id="feed-filtros"></div>
+                <div id="feed-posts-lista"></div>
+            </div>
             
             <div id="mensajes-container">
                 <div id="mensajes-lista"></div>
                 
                 <div class="chat-input-container">
- <input type="text" id="chat-in" placeholder="Escribe un mensaje...">
-<button class="send-btn" id="btn-enviar-msg" onclick="enviarMensajeSeguro()">➤</button>
-
+                    <input type="text" id="chat-in" placeholder="Escribe un mensaje...">
+                    <button class="send-btn" id="btn-enviar-msg" onclick="enviarMensajeSeguro()">➤</button>
                     <button id="btn-bengala-humo" class="smoke-btn">💨</button>
                     
                     <div style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; cursor: pointer;" title="Tomar Foto">
@@ -79,11 +81,17 @@
         </div>
 
         <nav class="nav-bar">
-            <button class="nav-btn active" id="nav-feed" style="touch-action: manipulation; cursor: pointer;">📰 FEED</button>
-            <button class="nav-btn" id="nav-chat" style="touch-action: manipulation; cursor: pointer;">💬 CHAT</button>
+            <button class="nav-btn active" id="nav-feed" onclick="window.cambiarVistaApp('feed')" style="touch-action: manipulation; cursor: pointer;">📰 FEED</button>
+            <button class="nav-btn" id="nav-chat" onclick="window.cambiarVistaApp('chat')" style="touch-action: manipulation; cursor: pointer;">💬 CHAT</button>
             <button class="nav-btn" id="nav-salir" onclick="if(typeof cerrarSesion==='function')cerrarSesion();else localStorage.clear();window.location.reload();" style="color: var(--fuego); border-color: var(--fuego); touch-action: manipulation; cursor: pointer;">❌ SALIR</button>
         </nav>
 
+    </div>
+
+    <div id="visor-imagen-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+        <button onclick="cerrarVisorImagen()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--fuego, #ff3366); font-size: 2rem; cursor: pointer; z-index: 10000;">✖</button>
+        <img id="visor-imagen-src" src="" style="max-width: 95%; max-height: 85%; object-fit: contain; border-radius: 8px; box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);">
+        <a id="visor-imagen-descargar" href="" download="casuals_media.jpg" style="margin-top: 20px; padding: 10px 20px; background: var(--neon-azul, #00f3ff); color: #000; font-weight: bold; text-decoration: none; border-radius: 4px;">💾 Guardar Imagen</a>
     </div>
 
     <script>
@@ -99,12 +107,9 @@
             appId: "1:552015693448:web:e3cdb8df21007b5a27c13d"
         };
 
-        // --- Cola de "esperar a estar autenticado" ---
-        // Cualquier código que necesite leer/escribir en Firebase debe pasar
-        // por window.CASUALS.whenAuthReady(fn) en vez de llamar a Firebase directo,
-        // así nunca se dispara un permission_denied por llegar demasiado rápido.
         window.CASUALS.authReady = false;
         window.CASUALS.authCallbacks = [];
+        
         window.CASUALS.whenAuthReady = function(cb) {
             if (window.CASUALS.authReady) {
                 cb();
@@ -112,6 +117,17 @@
                 window.CASUALS.authCallbacks.push(cb);
             }
         };
+
+        const liberarBloqueoAuth = () => {
+            if (!window.CASUALS.authReady) {
+                window.CASUALS.authReady = true;
+                window.CASUALS.authCallbacks.forEach(cb => {
+                    try { cb(); } catch (e) { console.error("Error en callback:", e); }
+                });
+                window.CASUALS.authCallbacks = [];
+            }
+        };
+        setTimeout(liberarBloqueoAuth, 2000);
 
         try {
             if (!firebase.apps.length) {
@@ -122,22 +138,62 @@
             window.CASUALS.firebaseInitialized = true;
 
             firebase.auth().onAuthStateChanged((user) => {
-                if (user) {
-                    window.CASUALS.authReady = true;
-                    window.CASUALS.authCallbacks.forEach(cb => {
-                        try { cb(); } catch (e) { console.error("Error en callback de auth:", e); }
-                    });
-                    window.CASUALS.authCallbacks = [];
-                }
+                window.CASUALS.authReady = true;
+                window.CASUALS.authCallbacks.forEach(cb => {
+                    try { cb(); } catch (e) { console.error("Error en callback de auth:", e); }
+                });
+                window.CASUALS.authCallbacks = [];
             });
 
             firebase.auth().signInAnonymously().catch((err) => {
-                console.error("❌ No se pudo autenticar anónimamente:", err);
+                console.warn("⚠️ Advertencia de Auth Anónima:", err);
+                liberarBloqueoAuth();
             });
         } catch (e) {
             console.error("Error crítico al iniciar Firebase:", e);
-            window.CASUALS.firebaseInitialized = false;
+            liberarBloqueoAuth();
         }
+
+        // CONTROLADOR DE VISTAS (FEED / CHAT)
+        window.cambiarVistaApp = function(vista) {
+            const body = document.body;
+            const btnFeed = document.getElementById('nav-feed');
+            const btnChat = document.getElementById('nav-chat');
+
+            if (vista === 'feed') {
+                body.classList.remove('vista-chat');
+                body.classList.add('vista-feed');
+                if (btnFeed) btnFeed.classList.add('active');
+                if (btnChat) btnChat.classList.remove('active');
+                if (typeof window.cargarPostsFeed === 'function') window.cargarPostsFeed();
+            } else {
+                body.classList.remove('vista-feed');
+                body.classList.add('vista-chat');
+                if (btnChat) btnChat.classList.add('active');
+                if (btnFeed) btnFeed.classList.remove('active');
+                if (typeof window.cargarMensajes === 'function') window.cargarMensajes();
+            }
+        };
+
+        // VISOR DE IMAGEN
+        window.abrirVisorImagen = function(url) {
+            const modal = document.getElementById('visor-imagen-modal');
+            const img = document.getElementById('visor-imagen-src');
+            const btnDescarga = document.getElementById('visor-imagen-descargar');
+            if(modal && img) {
+                img.src = url;
+                btnDescarga.href = url;
+                modal.style.display = 'flex';
+            }
+        };
+        window.cerrarVisorImagen = function() {
+            const modal = document.getElementById('visor-imagen-modal');
+            const img = document.getElementById('visor-imagen-src');
+            if(modal) {
+                modal.style.display = 'none';
+                img.src = '';
+            }
+        };
     </script>
     
     <script>
@@ -149,13 +205,23 @@
         }
     </script>
 
-    <script src="login.js?v=19"></script>
-    <script src="multimedia.js?v=19"></script>
-    <script src="feeds.js?v=19"></script>
-    <script src="panic.js?v=19"></script>
-    <script src="push-notifications.js?v=19"></script>
-    <script src="script.js?v=19"></script>
-    <script src="chat.js?v=19"></script>
+    <script src="feeds.js?v=22"></script>
+    <script src="panic.js?v=22"></script>
+    <script src="push-notifications.js?v=22" onerror="console.warn('Advertencia: push-notifications opcional omitido');"></script>
+    <script src="script.js?v=22"></script>
+    <script src="chat.js?v=22"></script>
+    <script src="login.js?v=22"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('casuals_autenticado') === 'true') {
+                const loginScreen = document.getElementById('login-screen');
+                const appScreen = document.getElementById('app-screen');
+                if (loginScreen) loginScreen.style.display = 'none';
+                if (appScreen) appScreen.style.display = 'flex';
+            }
+        });
+    </script>
 
     <script>
         if ('serviceWorker' in navigator) {

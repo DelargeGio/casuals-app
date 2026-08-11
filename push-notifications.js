@@ -1,71 +1,48 @@
-// ======================================
-// PUSH-NOTIFICATIONS.JS - REGISTRO Y GESTIÓN DE PUSH FCM
-// ======================================
+/**
+ * PUSH NOTIFICATIONS // SEGURO Y BLINDADO
+ */
 
-function inicializarNotificacionesPush() {
-    if (!('serviceWorker' in navigator)) {
-        console.log("Este navegador no soporta Service Workers.");
+(function() {
+    'use strict';
+
+    // Comprobar soporte de Service Worker y Notificaciones
+    if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+        console.log("⚠️ Las notificaciones push no están soportadas en este navegador.");
         return;
     }
 
-    console.log("Intentando registrar SW...");
-
-    navigator.serviceWorker.register('./firebase-messaging-sw.js')
-        .then((registration) => {
-            console.log('✅ Service Worker registrado con éxito:', registration.scope);
-
-            if (typeof firebase === 'undefined') {
-                console.warn('⚠️ Firebase no está definido todavía.');
-                return;
-            }
-            
-            const messaging = firebase.messaging();
-
-            Notification.requestPermission().then((permission) => {
-                if (permission === 'granted') {
-                    console.log('✅ Permiso de notificaciones concedido.');
-
-                    navigator.serviceWorker.ready.then((swRegistration) => {
-                        messaging.getToken({ serviceWorkerRegistration: swRegistration })
-                            .then((currentToken) => {
-                                if (currentToken) {
-                                    console.log('🔥 Token FCM obtenido:', currentToken);
-                                    guardarTokenEnFirebase(currentToken);
-                                } else {
-                                    console.log('⚠️ No se pudo obtener el token de registro.');
-                                }
-                            }).catch((err) => {
-                                console.error('❌ Error al recuperar el token de mensajería:', err);
-                            });
-                    });
-
-                } else {
-                    console.log('❌ Permiso de notificaciones denegado.');
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then((registration) => {
+                console.log("✅ SW Activo:", registration.scope);
+                
+                // Intentar solicitar permiso de forma silenciosa o preparada
+                if (Notification.permission === 'default') {
+                    // Opcional: puedes disparar esto con un botón de la UI si prefieres no invadir
+                    console.log("📢 Notificaciones listas para solicitar permiso.");
                 }
+            })
+            .catch((error) => {
+                // Capturar cualquier fallo de ruta o red sin romper la consola de Eruda
+                console.warn("Aviso de Service Worker (desarrollo local):", error.message || error);
             });
-        })
-        .catch((error) => {
-            console.error('❌ Error crítico en Service Worker:', error);
-        });
-}
+    });
 
-function guardarTokenEnFirebase(token) {
-    const usuario = localStorage.getItem("usuario_nombre") || "Agente_" + Math.floor(Math.random() * 9000 + 1000);
-    const tokenLimpio = token.replace(/[.#$\/\[\]]/g, '_');
-    
-    if (typeof firebase !== 'undefined' && window.db) {
-        window.db.ref('fcm_tokens/' + tokenLimpio).set({
-            usuario: usuario,
-            token: token,
-            actualizado: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => {
-            console.log('💾 Token guardado en Firebase.');
-        }).catch((err) => {
-            console.error('❌ Error Firebase Token:', err);
-        });
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(inicializarNotificacionesPush, 2500);
-});
+    // Función global para solicitar permisos de notificación manualmente desde la app si se desea
+    window.solicitarPermisoNotificaciones = async function() {
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                console.log("🎉 Permiso de notificación concedido.");
+                new Notification("CASUALS // PRIVATE", {
+                    body: "¡Notificaciones activadas correctamente!",
+                    icon: "./icon.png"
+                });
+            } else {
+                console.log("❌ Permiso de notificación denegado.");
+            }
+        } catch (e) {
+            console.error("Error al solicitar permisos:", e);
+        }
+    };
+})();

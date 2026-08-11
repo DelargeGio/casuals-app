@@ -1,5 +1,5 @@
 // ==========================================
-// LOGIN.JS - CORREGIDO PARA MÓVIL Y EJECUCIÓN INMEDIATA
+// LOGIN.JS - GESTIÓN DE ACCESO
 // ==========================================
 
 let pinIngresado = "";
